@@ -280,7 +280,10 @@ max-height:90%;
 </div>
 
 <script>
-let imageIndex={}
+let imageIndex = {
+  individual:{},
+  group:{}
+}
 const url="https://script.google.com/macros/s/AKfycbyYMhxBdpR0z92oBljcE_QRjF_ZqKA8asjiviXkXG6sPXzVh3j9npVisxqtNZBsCgHyBg/exec"
 
 let data=[]
@@ -317,9 +320,9 @@ imageIndex=await res.json()
   
 async function loadData(){
 
-headerImage.src = getGroup("college-1.jpeg")
-  
 await loadImageIndex()
+  
+headerImage.src = getGroup("college-1.jpeg")
   
 let cached=localStorage.getItem("ceg1977data")
 
@@ -585,22 +588,28 @@ scrollToTop();
 
 function getIndividual(file){
 
-let id=imageIndex.individual[file]
+  if(!imageIndex || !imageIndex.individual) return ""
 
-if(!id) return ""
+  let decoded = decodeURIComponent(file)
 
-return "https://drive.google.com/uc?export=view&id="+id
+  let id = imageIndex.individual[decoded]
 
+  if(!id) return ""
+
+  return "https://drive.google.com/uc?export=view&id="+id
 }
 
 function getGroup(file){
 
-let id=imageIndex.group[file]
+  if(!imageIndex || !imageIndex.group) return ""
 
-if(!id) return ""
+  let decoded = decodeURIComponent(file)
 
-return "https://drive.google.com/uc?export=view&id="+id
+  let id = imageIndex.group[decoded]
 
+  if(!id) return ""
+
+  return "https://drive.google.com/uc?export=view&id="+id
 }
   
 function showDetails(i){
