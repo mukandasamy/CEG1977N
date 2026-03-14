@@ -339,48 +339,41 @@ async function loadData(){
 
   if(cached){
     data = JSON.parse(cached)
+    filtered = [...data]
+    buildFilters()
     render()
     return
   }
 
-  let res = await fetch(API_URL + "?action=data")
+  try{
 
-  data = await res.json()
+    let res = await fetch(API_URL + "?action=data")
 
-  localStorage.setItem("ceg1977data",JSON.stringify(data))
+    let fresh = await res.json()
 
-  render()
+    data = fresh
+    filtered = [...data]
 
-}
+    localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
-try{
+    buildFilters()
 
-let res=await fetch(url)
+    loadingMessage.style.display = "none"
+    filters.style.display = "flex"
 
-let fresh=await res.json()
+    render()
 
-data=fresh
-filtered=[...data]
+  }catch(e){
 
-localStorage.setItem("ceg1977data",JSON.stringify(fresh))
+    console.error(e)
 
-buildFilters()
+    if(!cached){
+      loadingMessage.innerText = "Unable to load directory"
+    }
 
-loadingMessage.style.display="none"
-filters.style.display="flex"
-
-render()
-
-}catch(e){
-
-if(!cached){
-loadingMessage.innerText="Unable to load directory"
-}
+  }
 
 }
-
-}
-
 function scrollToTop(){
 window.scrollTo({top:0, behavior:"smooth"})
 }
