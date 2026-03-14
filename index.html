@@ -288,6 +288,9 @@ max-height:90%;
 </div>
 
 <script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbzvxmiH96UndzdaygiyTJpscLbuv8AKrkperThfuNjBNPyrYdHTmDy64DxsvYl1iYnfNQ/exec"
+  
 let imageIndex = {
   individual:{},
   group:{}
@@ -320,30 +323,34 @@ return dd+"-"+m
   
 async function loadImageIndex(){
 
-let res=await fetch("image_index.json")
+  let response = await fetch(API_URL + "?action=images")
 
-imageIndex=await res.json()
+  imageIndex = await response.json()
 
 }
   
 async function loadData(){
 
-await loadImageIndex()
-  
-headerImage.src = getGroup("college-1.jpeg")
-  
-let cached=localStorage.getItem("ceg1977data")
+  await loadImageIndex()
 
-if(cached){
-data=JSON.parse(cached)
-filtered=[...data]
+  headerImage.src = getGroup("college-1.jpeg")
 
-buildFilters()
+  let cached = localStorage.getItem("ceg1977data")
 
-loadingMessage.style.display="none"
-filters.style.display="flex"
+  if(cached){
+    data = JSON.parse(cached)
+    render()
+    return
+  }
 
-render()
+  let res = await fetch(API_URL + "?action=data")
+
+  data = await res.json()
+
+  localStorage.setItem("ceg1977data",JSON.stringify(data))
+
+  render()
+
 }
 
 try{
@@ -599,11 +606,13 @@ function getIndividual(file){
   if(!imageIndex || !imageIndex.individual) return ""
 
   let decoded = decodeURIComponent(file)
+
   let id = imageIndex.individual[decoded]
 
   if(!id) return ""
 
-  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
+  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w800"
+
 }
 
 function getGroup(file){
@@ -611,11 +620,13 @@ function getGroup(file){
   if(!imageIndex || !imageIndex.group) return ""
 
   let decoded = decodeURIComponent(file)
+
   let id = imageIndex.group[decoded]
 
   if(!id) return ""
 
   return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
+
 }
   
 function showDetails(i){
