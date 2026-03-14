@@ -172,7 +172,7 @@ max-height:90%;
 
 <header>
 
-<img src=getGroup(`${name}-${i}.jpeg`)
+<img id="headerImage">
 
 <h1>CEG 1977 Batch Golden Jubilee</h1>
 
@@ -317,6 +317,8 @@ imageIndex=await res.json()
   
 async function loadData(){
 
+headerImage.src = getGroup("college-1.jpeg")
+  
 await loadImageIndex()
   
 let cached=localStorage.getItem("ceg1977data")
