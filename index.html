@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CEG 1977 Batch Golden Jubilee</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+
+body{
+font-family:Arial,Helvetica;
+font-size:14px;
+margin:15px;
+}
+
+header{
+display:flex;
+flex-wrap:wrap;
+align-items:center;
+gap:10px;
+border-bottom:1px solid #ccc;
+padding-bottom:10px;
+}
+
+header img{height:70px}
+
+h1{margin:0;font-size:22px}
+
+button{
+background:#4a6fa5;
+color:white;
+border:none;
+padding:10px 16px;
+font-size:16px;
+border-radius:4px;
+cursor:pointer;
+}
+
+button:disabled{opacity:.5}
+
+#search{
+margin-left:auto;
+padding:6px;
+font-size:15px;
+width:240px;
+}
+
+#filters{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-top:12px;
+align-items:center;
+}
+
+#tableView{
+overflow-x:auto;
+}
+  
+select{
+background:#4a6fa5;
+color:white;
+border:none;
+padding:8px;
+font-size:16px;
+height:36px;
+}
+
+#recordCount{margin-left:auto}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:6px;
+}
+
+thead{
+background:#f1f5f9;
+position:sticky;
+top:0;
+}
+
+.cardGrid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+gap:14px;
+margin-top:14px;
+}
+
+.card{
+border:1px solid #999;
+padding:8px;
+}
+
+.cardImages{
+display:flex;
+gap:6px;
+margin-bottom:6px;
+}
+
+.footer{
+margin-top:12px;
+display:flex;
+gap:10px;
+align-items:center;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.55);
+}
+
+.modalContent{
+background:white;
+margin:20px auto;
+padding:18px;
+width:95%;
+max-height:90%;
+overflow:auto;
+line-height:1.8;
+}
+
+.closeX{
+float:right;
+font-size:22px;
+cursor:pointer;
+}
+
+.galleryGrid{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+align-items:flex-start;
+}
+
+.galleryGrid img{
+height:auto;
+width:auto;
+align-self:flex-start;
+}
+
+.zoomViewer{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+align-items:center;
+justify-content:center;
+}
+
+.zoomViewer img{
+max-width:90%;
+max-height:90%;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+<img src="group_pics/college-1.jpeg">
+
+<h1>CEG 1977 Batch Golden Jubilee</h1>
+
+<button onclick="openGallery()">Gallery</button>
+
+<input id="search" placeholder="Search directory">
+
+</header>
+
+<div id="loadingMessage">Loading alumni directory...</div>
+
+<div id="filters" style="display:none">
+
+<select id="branchFilter"></select>
+<select id="monthFilter"></select>
+<select id="alphaFilter"></select>
+
+<button onclick="clearFilters()">Clear Filters</button>
+
+<button id="viewBtn" onclick="toggleView()">Show Card View</button>
+
+<div id="recordCount"></div>
+
+</div>
+
+<div id="tableView" style="display:none"></div>
+<div id="cardView"></div>
+
+<div class="footer">
+
+<select id="pageSize">
+<option>10</option>
+<option>25</option>
+<option>50</option>
+<option>100</option>
+</select>
+
+<button id="prevBtn" onclick="prevPage()">Prev</button>
+
+<span id="pageInfo"></span>
+
+<button id="nextBtn" onclick="nextPage()">Next</button>
+
+</div>
+
+<!-- Modal 1 -->
+
+<div id="modal1" class="modal">
+<div class="modalContent">
+
+<span class="closeX" onclick="modal1.style.display='none'">×</span>
+
+<div id="modalImages"></div>
+
+<div id="modalDetails"></div>
+
+<div style="margin-top:12px">
+
+<button id="moreBtn">View More Pictures</button>
+<button onclick="modal1.style.display='none'">Close</button>
+
+</div>
+
+</div>
+</div>
+
+<!-- Modal 2 -->
+
+<div id="modal2" class="modal">
+
+<div class="modalContent">
+
+<span class="closeX" onclick="modal2.style.display='none'">×</span>
+
+<div id="modal2Images" class="galleryGrid"></div>
+
+<button onclick="modal2.style.display='none'">Close</button>
+
+</div>
+
+</div>
+
+<!-- Gallery -->
+
+<div id="galleryModal" class="modal">
+
+<div class="modalContent">
+
+<span class="closeX" onclick="closeGallery()">×</span>
+
+<h3>Gallery</h3>
+
+<div id="galleryGrid" class="galleryGrid"></div>
+
+<button onclick="closeGallery()">Close</button>
+
+</div>
+
+</div>
+
+<!-- Image Zoom -->
+
+<div id="zoomViewer" class="zoomViewer" onclick="closeZoom()">
+<img id="zoomImg">
+</div>
+
+<script>
+
+const url="https://script.google.com/macros/s/AKfycbyYMhxBdpR0z92oBljcE_QRjF_ZqKA8asjiviXkXG6sPXzVh3j9npVisxqtNZBsCgHyBg/exec"
+
+let data=[]
+let filtered=[]
+let page=1
+let cardMode=true
+
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+function encodeName(n){return encodeURIComponent(n)}
+
+function formatDOB(v){
+
+if(!v)return ""
+
+let d=new Date(v)
+
+if(isNaN(d))return v
+
+let dd=("0"+d.getDate()).slice(-2)
+let m=months[d.getMonth()]
+
+return dd+"-"+m
+
+}
+
+async function loadData(){
+
+let cached=localStorage.getItem("ceg1977data")
+
+if(cached){
+data=JSON.parse(cached)
+filtered=[...data]
+
+buildFilters()
+
+loadingMessage.style.display="none"
+filters.style.display="flex"
+
+render()
+}
+
+try{
+
+let res=await fetch(url)
+
+let fresh=await res.json()
+
+data=fresh
+filtered=[...data]
+
+localStorage.setItem("ceg1977data",JSON.stringify(fresh))
+
+buildFilters()
+
+loadingMessage.style.display="none"
+filters.style.display="flex"
+
+render()
+
+}catch(e){
+
+if(!cached){
+loadingMessage.innerText="Unable to load directory"
+}
+
+}
+
+}
+
+function scrollToTop(){
+window.scrollTo({top:0, behavior:"smooth"})
+}
+  
+function buildFilters(){
+
+let branches=[...new Set(data.map(x=>x.Branch))].sort()
+
+branchFilter.innerHTML="<option value='ALL'>Branch</option>"
+
+branches.forEach(b=>branchFilter.innerHTML+=`<option>${b}</option>`)
+
+monthFilter.innerHTML="<option value='ALL'>DOB Jan-Dec</option>"
+
+months.forEach(m=>monthFilter.innerHTML+=`<option>${m}</option>`)
+
+let letters=[...new Set(data.map(x=>x.Name[0].toUpperCase()))].sort()
+
+alphaFilter.innerHTML="<option value='ALL'>Name A - Z</option>"
+
+letters.forEach(a=>alphaFilter.innerHTML+=`<option>${a}</option>`)
+
+}
+
+function applyFilters(){
+
+let b=branchFilter.value
+let m=monthFilter.value
+let a=alphaFilter.value
+let s=search.value.toLowerCase()
+
+filtered=data.filter(d=>{
+
+let dob=new Date(d.Date_of_birth)
+let mmm=months[dob.getMonth()]
+
+if(b!="ALL" && d.Branch!=b) return false
+if(m!="ALL" && mmm!=m) return false
+if(a!="ALL" && d.Name[0].toUpperCase()!=a) return false
+if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
+
+return true
+
+})
+
+page=1
+render()
+
+}
+
+branchFilter.onchange=applyFilters
+monthFilter.onchange=applyFilters
+alphaFilter.onchange=applyFilters
+search.oninput=applyFilters
+
+function clearFilters(){
+
+search.value=""
+branchFilter.value="ALL"
+monthFilter.value="ALL"
+alphaFilter.value="ALL"
+
+filtered=[...data]
+
+render()
+
+}
+
+function pageSize(){
+return parseInt(document.getElementById("pageSize").options[
+document.getElementById("pageSize").selectedIndex
+].value)
+}
+
+document.getElementById("pageSize").onchange=function(){
+page=1
+render()
+scrollToTop()
+}
+
+function paginate(){
+
+let start=(page-1)*pageSize()
+
+return filtered.slice(start,start+pageSize())
+
+}
+
+function render(){
+
+recordCount.innerText=filtered.length+" records"
+
+viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
+
+if(cardMode)renderCards()
+else renderTable()
+
+updatePagination()
+
+}
+
+function renderTable(){
+
+let rows=paginate()
+
+let html="<table><thead><tr><th>Name</th><th>Branch</th><th>DOB</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody>"
+
+rows.forEach((r,i)=>{
+
+let idx=(page-1)*pageSize()+i
+
+html+=`
+
+<tr>
+<td>${r.Name}</td>
+<td>${r.Branch}</td>
+<td>${formatDOB(r.Date_of_birth)}</td>
+<td>${r.Email_address||""}</td>
+<td>${r.Phone_numbers||""}</td>
+<td><button onclick="showDetails(${idx})">View Details</button></td>
+</tr>
+
+`
+
+})
+
+html+="</tbody></table>"
+
+tableView.innerHTML=html
+
+}
+
+function renderCards(){
+
+let rows=paginate()
+
+let html="<div class='cardGrid'>"
+
+rows.forEach((r,i)=>{
+
+let idx=(page-1)*pageSize()+i
+
+let name=encodeName(r.Name)
+
+html+=`
+
+<div class="card">
+
+<div class="cardImages">
+
+<img loading="lazy" src="individual_pics/${name}-1977.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="individual_pics/${name}-2020.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="individual_pics/${name}-2027.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+
+</div>
+
+<b>${r.Name}</b><br>
+${r.Branch}<br>
+${formatDOB(r.Date_of_birth)}<br>
+${r.Email_address||""}<br>
+${r.Phone_numbers||""}<br><br>
+
+<button onclick="showDetails(${idx})">View Details</button>
+
+</div>
+
+`
+
+})
+
+html+="</div>"
+
+cardView.innerHTML=html
+
+}
+
+function toggleView(){
+
+cardMode=!cardMode
+
+tableView.style.display=cardMode?"none":"block"
+cardView.style.display=cardMode?"block":"none"
+
+viewBtn.innerText=cardMode?"Show Table View":"Show Card View"
+
+render()
+
+}
+
+function updatePagination(){
+
+let total=Math.ceil(filtered.length/pageSize())
+
+pageInfo.innerText="Page "+page+" / "+(total||1)
+
+prevBtn.disabled=(page===1)
+nextBtn.disabled=(page===total)
+
+}
+
+function prevPage(){
+if(page>1){
+page--;
+render();
+scrollToTop();
+}
+}
+
+function nextPage(){
+
+let total=Math.ceil(filtered.length/pageSize())
+
+if(page<total){
+page++;
+render();
+scrollToTop();
+}
+
+}
+
+function showDetails(i){
+
+let r=filtered[i]
+
+let name=encodeName(r.Name)
+
+modalImages.innerHTML=`
+
+<img loading="lazy" src="individual_pics/${name}-1977.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="individual_pics/${name}-2020.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="individual_pics/${name}-2027.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+
+`
+
+let html=""
+
+for(let k in r){
+html+=`<b>${k}</b>: ${r[k]||""}<br>`
+}
+
+modalDetails.innerHTML=html
+
+let test=new Image()
+
+test.onload=function(){
+moreBtn.style.display="inline-block"
+}
+
+test.onerror=function(){
+moreBtn.style.display="none"
+}
+
+test.src=`group_pics/${name}-1.jpeg`
+
+moreBtn.onclick=function(){openMorePics(name)}
+
+modal1.style.display="block"
+
+}
+
+function openMorePics(name){
+
+let html=""
+
+for(let i=1;i<=25;i++){
+
+html+=`<img loading="lazy" src="group_pics/${name}-${i}.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">`
+
+}
+
+modal2Images.innerHTML=html
+
+modal2.style.display="block"
+
+}
+
+function openGallery(){
+
+let html=""
+
+for(let i=1;i<=100;i++){
+
+html+=`<img loading="lazy" src="group_pics/group-${i}.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">`
+
+}
+
+galleryGrid.innerHTML=html
+
+galleryModal.style.display="block"
+
+}
+
+function closeGallery(){
+galleryModal.style.display="none"
+}
+
+function zoom(img){
+
+zoomImg.src=img.src
+
+zoomViewer.style.display="flex"
+
+}
+
+function closeZoom(){
+
+zoomViewer.style.display="none"
+
+}
+
+window.onclick=function(e){
+
+if(e.target.classList.contains("modal"))
+e.target.style.display="none"
+
+}
+
+loadData()
+
+</script>
+
+</body>
+</html>
