@@ -513,9 +513,9 @@ html+=`
 
 <div class="cardImages">
 
-<img loading="lazy" src=getIndividual(`${name}-1977.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src=getIndividual(`${name}-2020.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src=getIndividual(`${name}-2027.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
 
 </div>
 
@@ -611,12 +611,10 @@ let name=encodeName(r.Name)
 
 modalImages.innerHTML=`
 
-<img loading="lazy" src=getIndividual(`${name}-1977.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src=getIndividual(`${name}-2020.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src=getIndividual(`${name}-2027.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
-
+<img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
 `
-
 let html=""
 
 for(let k in r){
@@ -635,7 +633,7 @@ test.onerror=function(){
 moreBtn.style.display="none"
 }
 
-test.src=getGroup(`${name}-${i}.jpeg`)
+test.src="getGroup(`${name}-${i}.jpeg`)"
 
 moreBtn.onclick=function(){openMorePics(name)}
 
