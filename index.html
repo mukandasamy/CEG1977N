@@ -607,11 +607,15 @@ function getIndividual(file){
 
   let decoded = decodeURIComponent(file)
 
+  console.log("Looking for:", decoded)
+
   let id = imageIndex.individual[decoded]
+
+  console.log("Found:", id)
 
   if(!id) return ""
 
-  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w800"
+  return "https://drive.google.com/thumbnail?id="+id+"&sz=w800"
 
 }
 
