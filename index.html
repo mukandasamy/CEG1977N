@@ -645,9 +645,15 @@ function openMorePics(name){
 
 let html=""
 
-for(let i=1;i<=25;i++){
+for(let file in imageIndex.group){
 
-html+=`<img loading="lazy" src=getGroup(`${name}-${i}.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(file.startsWith(name+"-")){
+
+    html += `<img loading="lazy"
+      src="${getGroup(file)}"
+      onclick="zoom(this)">`
+
+  }
 
 }
 
@@ -661,9 +667,15 @@ function openGallery(){
 
 let html=""
 
-for(let i=1;i<=100;i++){
+for(let file in imageIndex.group){
 
-html+=`<img loading="lazy" src=getGroup(`${name}-${i}.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(file.startsWith("group-")){
+
+    html += `<img loading="lazy"
+      src="${getGroup(file)}"
+      onclick="zoom(this)">`
+
+  }
 
 }
 
