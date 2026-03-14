@@ -295,7 +295,6 @@ let imageIndex = {
   individual:{},
   group:{}
 }
-const url="https://script.google.com/macros/s/AKfycbyYMhxBdpR0z92oBljcE_QRjF_ZqKA8asjiviXkXG6sPXzVh3j9npVisxqtNZBsCgHyBg/exec"
 
 let data=[]
 let filtered=[]
@@ -322,16 +321,21 @@ return dd+"-"+m
 }
   
 async function loadImageIndex(){
-
-  let response = await fetch(API_URL + "?action=images")
-
-  imageIndex = await response.json()
-
+  try{
+    const res = await fetch(API_URL + "?action=images")
+    const text = await res.text()
+    console.log("images raw response:", text)
+    imageIndex = JSON.parse(text)
+    console.log("imageIndex loaded:", imageIndex)
+  }catch(e){
+    console.error("loadImageIndex failed:", e)
+  }
 }
   
 async function loadData(){
 
   await loadImageIndex()
+  console.log("after loadImageIndex:", imageIndex)
 
   headerImage.src = getGroup("college-1.jpeg")
 
@@ -341,14 +345,14 @@ async function loadData(){
     data = JSON.parse(cached)
     filtered = [...data]
     buildFilters()
+    loadingMessage.style.display = "none"
+    filters.style.display = "flex"
     render()
     return
   }
 
   try{
-
     let res = await fetch(API_URL + "?action=data")
-
     let fresh = await res.json()
 
     data = fresh
@@ -357,23 +361,16 @@ async function loadData(){
     localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
     buildFilters()
-
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
 
     render()
-
   }catch(e){
-
     console.error(e)
-
-    if(!cached){
-      loadingMessage.innerText = "Unable to load directory"
-    }
-
+    loadingMessage.innerText = "Unable to load directory"
   }
-
 }
+  
 function scrollToTop(){
 window.scrollTo({top:0, behavior:"smooth"})
 }
