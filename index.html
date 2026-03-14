@@ -599,12 +599,11 @@ function getIndividual(file){
   if(!imageIndex || !imageIndex.individual) return ""
 
   let decoded = decodeURIComponent(file)
-
   let id = imageIndex.individual[decoded]
 
   if(!id) return ""
 
-  return "https://lh3.googleusercontent.com/d/" + id
+  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
 }
 
 function getGroup(file){
@@ -612,12 +611,11 @@ function getGroup(file){
   if(!imageIndex || !imageIndex.group) return ""
 
   let decoded = decodeURIComponent(file)
-
   let id = imageIndex.group[decoded]
 
   if(!id) return ""
 
-  return "https://lh3.googleusercontent.com/d/" + id
+  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
 }
   
 function showDetails(i){
