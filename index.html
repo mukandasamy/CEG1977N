@@ -172,7 +172,7 @@ max-height:90%;
 
 <header>
 
-<img src="group_pics/college-1.jpeg">
+<img src=getGroup(`${name}-${i}.jpeg`)
 
 <h1>CEG 1977 Batch Golden Jubilee</h1>
 
@@ -280,7 +280,7 @@ max-height:90%;
 </div>
 
 <script>
-
+let imageIndex={}
 const url="https://script.google.com/macros/s/AKfycbyYMhxBdpR0z92oBljcE_QRjF_ZqKA8asjiviXkXG6sPXzVh3j9npVisxqtNZBsCgHyBg/exec"
 
 let data=[]
@@ -306,9 +306,19 @@ let m=months[d.getMonth()]
 return dd+"-"+m
 
 }
+  
+async function loadImageIndex(){
 
+let res=await fetch("image_index.json")
+
+imageIndex=await res.json()
+
+}
+  
 async function loadData(){
 
+await loadImageIndex()
+  
 let cached=localStorage.getItem("ceg1977data")
 
 if(cached){
@@ -501,9 +511,9 @@ html+=`
 
 <div class="cardImages">
 
-<img loading="lazy" src="individual_pics/${name}-1977.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="individual_pics/${name}-2020.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="individual_pics/${name}-2027.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-1977.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-2020.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-2027.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
 
 </div>
 
@@ -571,6 +581,26 @@ scrollToTop();
 
 }
 
+function getIndividual(file){
+
+let id=imageIndex.individual[file]
+
+if(!id) return ""
+
+return "https://drive.google.com/uc?export=view&id="+id
+
+}
+
+function getGroup(file){
+
+let id=imageIndex.group[file]
+
+if(!id) return ""
+
+return "https://drive.google.com/uc?export=view&id="+id
+
+}
+  
 function showDetails(i){
 
 let r=filtered[i]
@@ -579,9 +609,9 @@ let name=encodeName(r.Name)
 
 modalImages.innerHTML=`
 
-<img loading="lazy" src="individual_pics/${name}-1977.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="individual_pics/${name}-2020.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="individual_pics/${name}-2027.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-1977.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-2020.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src=getIndividual(`${name}-2027.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">
 
 `
 
@@ -603,7 +633,7 @@ test.onerror=function(){
 moreBtn.style.display="none"
 }
 
-test.src=`group_pics/${name}-1.jpeg`
+test.src=getGroup(`${name}-${i}.jpeg`)
 
 moreBtn.onclick=function(){openMorePics(name)}
 
@@ -617,7 +647,7 @@ let html=""
 
 for(let i=1;i<=25;i++){
 
-html+=`<img loading="lazy" src="group_pics/${name}-${i}.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">`
+html+=`<img loading="lazy" src=getGroup(`${name}-${i}.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">`
 
 }
 
@@ -633,7 +663,7 @@ let html=""
 
 for(let i=1;i<=100;i++){
 
-html+=`<img loading="lazy" src="group_pics/group-${i}.jpeg" onclick="zoom(this)" onerror="this.style.display='none'">`
+html+=`<img loading="lazy" src=getGroup(`${name}-${i}.jpeg`) onclick="zoom(this)" onerror="this.style.display='none'">`
 
 }
 
