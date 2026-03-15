@@ -718,10 +718,10 @@ function renderCards(){
 
     html += `
     <div class="card">
-      <div class="cardImages">
-        <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
+      <div class="cardImages" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; height:110px; min-height:110px; margin-bottom:12px;">
+        <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'" style="width:100%; height:110px; object-fit:contain; display:block; border-radius:6px;">
+        <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'" style="width:100%; height:110px; object-fit:contain; display:block; border-radius:6px;">
+        <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'" style="width:100%; height:110px; object-fit:contain; display:block; border-radius:6px;">
       </div>
 
       <div class="cardBody">
@@ -742,6 +742,7 @@ function renderCards(){
   html += "</div>"
   cardView.innerHTML = html
 }
+
 
   function toggleView(){
   cardMode = !cardMode
