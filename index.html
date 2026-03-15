@@ -338,6 +338,34 @@ async function loadImageIndex(){
   }
 }
 
+function prepareData(rows){
+  return rows.map(r => {
+    let searchText = Object.values(r)
+      .filter(v => v !== null && v !== undefined)
+      .join(" ")
+      .toLowerCase()
+
+    return {
+      ...r,
+      _searchText: searchText
+    }
+  })
+}
+
+  function attachPrimaryImageUrls(rows){
+  return rows.map(r => {
+    let name = encodeName(r.Name || "")
+
+    return {
+      ...r,
+      _img1977: getIndividual(`${name}-1977.jpeg`),
+      _img2020: getIndividual(`${name}-2020.jpeg`),
+      _img2027: getIndividual(`${name}-2027.jpeg`)
+    }
+  })
+}
+
+  
 async function loadData(){
   await loadImageIndex()
   console.log("after loadImageIndex:", imageIndex)
@@ -348,32 +376,36 @@ async function loadData(){
 
   let cached = localStorage.getItem("ceg1977data")
 
-  if(cached){
-    data = JSON.parse(cached)
-    filtered = [...data]
-    buildFilters(data)
-    loadingMessage.style.display = "none"
-    filters.style.display = "flex"
-    render()
-    return
-  }
+if(cached){
+  data = attachPrimaryImageUrls(prepareData(JSON.parse(cached)))
+  filtered = [...data]
+  buildFilters(data)
+  loadingMessage.style.display = "none"
+  filters.style.display = "flex"
+  render()
+  preloadVisiblePageImages()
+  preloadNextPageImages()
+  return
+}
+
 
   try{
     let res = await fetch(API_URL + "?action=data")
     let fresh = await res.json()
-
-    data = fresh
-    filtered = [...data]
-
-    localStorage.setItem("ceg1977data", JSON.stringify(fresh))
-
-    buildFilters(data)
     
-
+    data = attachPrimaryImageUrls(prepareData(fresh))
+    filtered = [...data]
+    
+    localStorage.setItem("ceg1977data", JSON.stringify(fresh))
+    
+    buildFilters(data)
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
-
+    
     render()
+    preloadVisiblePageImages()
+    preloadNextPageImages()
+
   }catch(e){
     console.error(e)
     loadingMessage.innerText = "Unable to load directory"
@@ -492,9 +524,10 @@ function applyFilters(changedFilter = ""){
   let a = alphaFilter.value
   let s = search.value.toLowerCase()
 
-  function matchesSearch(d){
-    return !s || Object.values(d).join(" ").toLowerCase().includes(s)
-  }
+function matchesSearch(d){
+  return !s || (d._searchText || "").includes(s)
+}
+
 
   function getMonthValue(d){
     let dob = new Date(d.Date_of_birth)
@@ -598,7 +631,11 @@ function render(){
   else renderTable()
 
   updatePagination()
+
+  preloadVisiblePageImages()
+  preloadNextPageImages()
 }
+
 
 function renderTable(){
   let rows = paginate()
@@ -630,14 +667,14 @@ function renderCards(){
 
   rows.forEach((r,i) => {
     let idx = (page - 1) * pageSize() + i
-    let name = encodeName(r.Name)
+    
 
     html += `
     <div class="card">
       <div class="cardImages">
-        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+      <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
+      <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
+      <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
 
       </div>
 
@@ -716,15 +753,44 @@ function getGroup(file){
   return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
 }
 
+function preloadImage(src){
+  if(!src) return
+  const img = new Image()
+  img.decoding = "async"
+  img.src = src
+}
+
+function preloadRecordImages(r){
+  if(!r) return
+
+  preloadImage(r._img1977 || "")
+  preloadImage(r._img2020 || "")
+  preloadImage(r._img2027 || "")
+}
+
+
+function preloadVisiblePageImages(){
+  let rows = paginate()
+  rows.forEach(r => preloadRecordImages(r))
+}
+
+function preloadNextPageImages(){
+  let start = page * pageSize()
+  let nextRows = filtered.slice(start, start + pageSize())
+  nextRows.forEach(r => preloadRecordImages(r))
+}
+
+  
 function showDetails(i){
   let r = filtered[i]
   if(!r) return
 
   let name = encodeName(r.Name)
 
-  let img1 = getIndividual(`${name}-1977.jpeg`)
-  let img2 = getIndividual(`${name}-2020.jpeg`)
-  let img3 = getIndividual(`${name}-2027.jpeg`)
+  let img1 = r._img1977 || ""
+  let img2 = r._img2020 || ""
+  let img3 = r._img2027 || ""
+
 
   let modalImgsHTML = ""
 
