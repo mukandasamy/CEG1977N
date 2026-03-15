@@ -766,6 +766,17 @@ function renderCards(){
   cardView.innerHTML = html
 }
 
+function toggleView(){
+  cardMode = !cardMode
+
+  tableView.style.display = cardMode ? "none" : "block"
+  cardView.style.display = cardMode ? "block" : "none"
+
+  viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
+
+  render()
+}
+
 function updatePagination(){
   let total = Math.ceil(filtered.length / pageSize())
 
@@ -868,7 +879,7 @@ function showDetails(i){
 
     let value = r[k] || ""
 
-    if(k === "Date_of_birth" || k === "Anniversary_Date"){
+    if(k === "Date_of_birth" || k === "Anniversary_date"){
       value = formatDOB(value)
     }
 
