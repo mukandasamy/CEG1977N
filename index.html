@@ -368,7 +368,7 @@ async function loadData(){
     localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
     buildFilters(data)
-    updateBranchCounts()
+    
 
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
@@ -486,6 +486,7 @@ function rebuildAlphaFilter(source){
 
   
 function applyFilters(changedFilter = ""){
+  console.log("applyFilters called")
   let b = branchFilter.value
   let m = monthFilter.value
   let a = alphaFilter.value
@@ -568,8 +569,8 @@ function clearFilters(){
   buildFilters(data)
   page = 1
   render()
-  
 }
+
 
 
 function pageSize(){
@@ -815,6 +816,14 @@ window.onclick = function(e){
   }
 }
 
+window.addEventListener("DOMContentLoaded", () => {
+  branchFilter.onchange = () => applyFilters("branch")
+  monthFilter.onchange = () => applyFilters("month")
+  alphaFilter.onchange = () => applyFilters("alpha")
+  search.oninput = () => applyFilters("search")
+})
+
+  
 loadData()
 </script>
 
