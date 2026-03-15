@@ -803,7 +803,7 @@ function showDetails(i){
 
   let html = ""
   for(let k in r){
-    if(k === "_searchText") continue
+    if(k.startsWith("_")) continue
     html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`
   }
 
