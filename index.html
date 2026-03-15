@@ -368,6 +368,8 @@ async function loadData(){
     localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
     buildFilters(data)
+    updateBranchCounts()
+
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
 
@@ -429,48 +431,133 @@ function buildFilters(source = data){
   else alphaFilter.value = "ALL"
 }
 
+function rebuildBranchFilter(source){
+  const currentBranch = branchFilter.value || "ALL"
+
+  let branches = [...new Set(
+    source.map(x => (x.Branch || "").trim()).filter(Boolean)
+  )].sort()
+
+  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
+  branches.forEach(b => {
+    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`
+  })
+
+  if([...branchFilter.options].some(o => o.value === currentBranch)) branchFilter.value = currentBranch
+  else branchFilter.value = "ALL"
+}
+
+function rebuildMonthFilter(source){
+  const currentMonth = monthFilter.value || "ALL"
+
+  let monthValues = [...new Set(
+    source.map(x => {
+      let dob = new Date(x.Date_of_birth)
+      return isNaN(dob) ? "" : months[dob.getMonth()]
+    }).filter(Boolean)
+  )]
+
+  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
+  months.forEach(m => {
+    if(monthValues.includes(m)){
+      monthFilter.innerHTML += `<option value="${m}">${m}</option>`
+    }
+  })
+
+  if([...monthFilter.options].some(o => o.value === currentMonth)) monthFilter.value = currentMonth
+  else monthFilter.value = "ALL"
+}
+
+function rebuildAlphaFilter(source){
+  const currentAlpha = alphaFilter.value || "ALL"
+
+  let letters = [...new Set(
+    source.map(x => (x.Name || "").trim().charAt(0).toUpperCase()).filter(Boolean)
+  )].sort()
+
+  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
+  letters.forEach(a => {
+    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`
+  })
+
+  if([...alphaFilter.options].some(o => o.value === currentAlpha)) alphaFilter.value = currentAlpha
+  else alphaFilter.value = "ALL"
+}
+
+  
 function applyFilters(changedFilter = ""){
   let b = branchFilter.value
   let m = monthFilter.value
   let a = alphaFilter.value
   let s = search.value.toLowerCase()
 
-  filtered = data.filter(d => {
+  function matchesSearch(d){
+    return !s || Object.values(d).join(" ").toLowerCase().includes(s)
+  }
+
+  function getMonthValue(d){
     let dob = new Date(d.Date_of_birth)
-    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
-    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase()
+    return isNaN(dob) ? "" : months[dob.getMonth()]
+  }
+
+  function getAlphaValue(d){
+    return (d.Name || "").trim().charAt(0).toUpperCase()
+  }
+
+  // Final filtered result
+  filtered = data.filter(d => {
+    let mmm = getMonthValue(d)
+    let firstLetter = getAlphaValue(d)
 
     if(b !== "ALL" && d.Branch !== b) return false
     if(m !== "ALL" && mmm !== m) return false
     if(a !== "ALL" && firstLetter !== a) return false
-    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
+    if(!matchesSearch(d)) return false
 
     return true
   })
 
-  let sourceForDynamicFilters = data.filter(d => {
-    let dob = new Date(d.Date_of_birth)
-    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
-    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase()
+  // Cascading filter sources:
+  // each dropdown is built from data filtered by the OTHER active filters
+  let branchSource = data.filter(d => {
+    let mmm = getMonthValue(d)
+    let firstLetter = getAlphaValue(d)
 
-    if(changedFilter !== "branch" && b !== "ALL" && d.Branch !== b) return false
-    if(changedFilter !== "month" && m !== "ALL" && mmm !== m) return false
-    if(changedFilter !== "alpha" && a !== "ALL" && firstLetter !== a) return false
-    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
+    if(m !== "ALL" && mmm !== m) return false
+    if(a !== "ALL" && firstLetter !== a) return false
+    if(!matchesSearch(d)) return false
 
     return true
   })
 
-  buildFilters(sourceForDynamicFilters)
+  let monthSource = data.filter(d => {
+    let firstLetter = getAlphaValue(d)
+
+    if(b !== "ALL" && d.Branch !== b) return false
+    if(a !== "ALL" && firstLetter !== a) return false
+    if(!matchesSearch(d)) return false
+
+    return true
+  })
+
+  let alphaSource = data.filter(d => {
+    let mmm = getMonthValue(d)
+
+    if(b !== "ALL" && d.Branch !== b) return false
+    if(m !== "ALL" && mmm !== m) return false
+    if(!matchesSearch(d)) return false
+
+    return true
+  })
+
+  rebuildBranchFilter(branchSource)
+  rebuildMonthFilter(monthSource)
+  rebuildAlphaFilter(alphaSource)
 
   page = 1
   render()
+  updateBranchCounts()
 }
-
-branchFilter.onchange = () => applyFilters("branch")
-monthFilter.onchange = () => applyFilters("month")
-alphaFilter.onchange = () => applyFilters("alpha")
-search.oninput = () => applyFilters("search")
 
 function clearFilters(){
   search.value = ""
@@ -481,7 +568,9 @@ function clearFilters(){
   buildFilters(data)
   page = 1
   render()
+  updateBranchCounts()
 }
+
 
 function pageSize(){
   return parseInt(document.getElementById("pageSize").options[
@@ -545,9 +634,10 @@ function renderCards(){
     html += `
     <div class="card">
       <div class="cardImages">
-        <img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-        <img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+
       </div>
 
       <b>${r.Name}</b><br>
@@ -637,9 +727,10 @@ function showDetails(i){
 
   let modalImgsHTML = ""
 
-  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
-  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
-  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img1) modalImgsHTML += `<img loading="lazy" decoding="async" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img2) modalImgsHTML += `<img loading="lazy" decoding="async" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img3) modalImgsHTML += `<img loading="lazy" decoding="async" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
+
 
   modalImages.innerHTML = modalImgsHTML
 
@@ -683,7 +774,7 @@ function openMorePics(name){
     if(file.startsWith(decodedName + "-")){
       let src = getGroup(file)
       if(src){
-        html += `<img loading="lazy" src="${src}" onclick="zoom(this)" onerror="this.style.display='none'">`
+        html += `<img loading="lazy" decoding="async" src="${src}" onclick="zoom(this)" onerror="this.style.display='none'">`
       }
     }
   }
@@ -697,7 +788,7 @@ function openGallery(){
 
   for(let file in imageIndex.group){
     if(file.startsWith("group-")){
-      html += `<img loading="lazy" src="${getGroup(file)}" onclick="zoom(this)">`
+      html += `<img loading="lazy" decoding="async" src="${getGroup(file)}" onclick="zoom(this)">`
     }
   }
 
