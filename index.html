@@ -589,39 +589,49 @@ function renderTable(){
 
 function renderCards(){
 
-  let rows=paginate()
+  let rows = paginate()
 
-  let html="<div class='cardGrid'>"
+  let html = "<div class='cardGrid'>"
 
   rows.forEach((r,i)=>{
 
-    let idx=(page-1)*pageSize()+i
+    let idx = (page-1)*pageSize()+i
+    let name = encodeName(r.Name)
 
-    let name=encodeName(r.Name)
+    let img1 = getIndividual(`${name}-1977.jpeg`)
+    let img2 = getIndividual(`${name}-2020.jpeg`)
+    let img3 = getIndividual(`${name}-2027.jpeg`)
 
-    html+=`
+    let imagesHTML = ""
+
+    if(img1) imagesHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
+    if(img2) imagesHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
+    if(img3) imagesHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
+
+    html += `
       <div class="card">
+
         <div class="cardImages">
-        ${imagesHTML}
+          ${imagesHTML}
         </div>
 
         <b>${escapeHtml(r.Name)}</b><br>
-        ${escapeHtml(r.Branch)}<br>
+        ${escapeHtml(r.Branch || "")}<br>
         ${escapeHtml(formatDOB(r.Date_of_birth))}<br>
-        ${escapeHtml(r.Email_address||"")}<br>
-        ${escapeHtml(r.Phone_numbers||"")}<br><br>
+        ${escapeHtml(r.Email_address || "")}<br>
+        ${escapeHtml(r.Phone_numbers || "")}<br><br>
 
         <button onclick="showDetails(${idx})">View Details</button>
+
       </div>
     `
-
   })
 
-  html+="</div>"
+  html += "</div>"
 
-  cardView.innerHTML=html
-
+  cardView.innerHTML = html
 }
+
 
 function toggleView(){
 
@@ -707,13 +717,14 @@ function showDetails(i){
   let img2 = getIndividual(`${name}-2020.jpeg`)
   let img3 = getIndividual(`${name}-2027.jpeg`)
   
-  let html = ""
+  let modalImgsHTML = ""
   
-  if(img1) html += `<img loading="lazy" src="${img1}" onclick="zoom(this)">`
-  if(img2) html += `<img loading="lazy" src="${img2}" onclick="zoom(this)">`
-  if(img3) html += `<img loading="lazy" src="${img3}" onclick="zoom(this)">`
+  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
   
-  modalImages.innerHTML = html
+  modalImages.innerHTML = modalImgsHTML
+
 
   for(let k in r){
     if(k === "_searchText") continue
