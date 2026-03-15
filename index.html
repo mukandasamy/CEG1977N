@@ -303,6 +303,18 @@ let cardMode=true
 
 const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
+<script>
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+</script>
+
+  
 function encodeName(n){return encodeURIComponent(n)}
 
 function formatDOB(v){
@@ -375,69 +387,112 @@ function scrollToTop(){
 window.scrollTo({top:0, behavior:"smooth"})
 }
   
-function buildFilters(){
+function buildFilters(source = data){
 
-let branches=[...new Set(data.map(x=>x.Branch))].sort()
+  const currentBranch = branchFilter.value || "ALL";
+  const currentMonth = monthFilter.value || "ALL";
+  const currentAlpha = alphaFilter.value || "ALL";
 
-branchFilter.innerHTML="<option value='ALL'>Branch</option>"
+  let branches = [...new Set(
+    source.map(x => (x.Branch || "").trim()).filter(Boolean)
+  )].sort();
 
-branches.forEach(b=>branchFilter.innerHTML+=`<option>${b}</option>`)
+  branchFilter.innerHTML = "<option value='ALL'>Branch</option>";
+  branches.forEach(b => {
+    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`;
+  });
 
-monthFilter.innerHTML="<option value='ALL'>DOB Jan-Dec</option>"
+  let monthValues = [...new Set(
+    source.map(x => {
+      let dob = new Date(x.Date_of_birth);
+      return isNaN(dob) ? "" : months[dob.getMonth()];
+    }).filter(Boolean)
+  )];
 
-months.forEach(m=>monthFilter.innerHTML+=`<option>${m}</option>`)
+  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>";
+  months.forEach(m => {
+    if(monthValues.includes(m)){
+      monthFilter.innerHTML += `<option value="${m}">${m}</option>`;
+    }
+  });
 
-let letters=[...new Set(data.map(x=>x.Name[0].toUpperCase()))].sort()
+  let letters = [...new Set(
+    source.map(x => (x.Name || "").trim().charAt(0).toUpperCase()).filter(Boolean)
+  )].sort();
 
-alphaFilter.innerHTML="<option value='ALL'>Name A - Z</option>"
+  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>";
+  letters.forEach(a => {
+    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`;
+  });
 
-letters.forEach(a=>alphaFilter.innerHTML+=`<option>${a}</option>`)
+  if([...branchFilter.options].some(o => o.value === currentBranch)) branchFilter.value = currentBranch;
+  else branchFilter.value = "ALL";
 
+  if([...monthFilter.options].some(o => o.value === currentMonth)) monthFilter.value = currentMonth;
+  else monthFilter.value = "ALL";
+
+  if([...alphaFilter.options].some(o => o.value === currentAlpha)) alphaFilter.value = currentAlpha;
+  else alphaFilter.value = "ALL";
 }
 
-function applyFilters(){
 
-let b=branchFilter.value
-let m=monthFilter.value
-let a=alphaFilter.value
-let s=search.value.toLowerCase()
+function applyFilters(changedFilter = ""){
 
-filtered=data.filter(d=>{
+  let b = branchFilter.value;
+  let m = monthFilter.value;
+  let a = alphaFilter.value;
+  let s = search.value.toLowerCase();
 
-let dob=new Date(d.Date_of_birth)
-let mmm=months[dob.getMonth()]
+  // Step 1: apply all active filters to get final result
+  filtered = data.filter(d => {
+    let dob = new Date(d.Date_of_birth);
+    let mmm = isNaN(dob) ? "" : months[dob.getMonth()];
+    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase();
 
-if(b!="ALL" && d.Branch!=b) return false
-if(m!="ALL" && mmm!=m) return false
-if(a!="ALL" && d.Name[0].toUpperCase()!=a) return false
-if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
+    if(b !== "ALL" && d.Branch !== b) return false;
+    if(m !== "ALL" && mmm !== m) return false;
+    if(a !== "ALL" && firstLetter !== a) return false;
+    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false;
 
-return true
+    return true;
+  });
 
-})
+  // Step 2: build dynamic options based on other selected filters
+  let sourceForDynamicFilters = data.filter(d => {
+    let dob = new Date(d.Date_of_birth);
+    let mmm = isNaN(dob) ? "" : months[dob.getMonth()];
+    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase();
 
-page=1
-render()
+    if(changedFilter !== "branch" && b !== "ALL" && d.Branch !== b) return false;
+    if(changedFilter !== "month" && m !== "ALL" && mmm !== m) return false;
+    if(changedFilter !== "alpha" && a !== "ALL" && firstLetter !== a) return false;
+    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false;
 
+    return true;
+  });
+
+  buildFilters(sourceForDynamicFilters);
+
+  page = 1;
+  render();
 }
 
-branchFilter.onchange=applyFilters
-monthFilter.onchange=applyFilters
-alphaFilter.onchange=applyFilters
-search.oninput=applyFilters
-
+branchFilter.onchange = () => applyFilters("branch")
+monthFilter.onchange = () => applyFilters("month")
+alphaFilter.onchange = () => applyFilters("alpha")
+search.oninput = () => applyFilters("search")
+  
 function clearFilters(){
-
-search.value=""
-branchFilter.value="ALL"
-monthFilter.value="ALL"
-alphaFilter.value="ALL"
-
-filtered=[...data]
-
-render()
-
+  search.value = "";
+  branchFilter.value = "ALL";
+  monthFilter.value = "ALL";
+  alphaFilter.value = "ALL";
+  filtered = [...data];
+  buildFilters(data);
+  page = 1;
+  render();
 }
+
 
 function pageSize(){
 return parseInt(document.getElementById("pageSize").options[
@@ -620,46 +675,49 @@ function getGroup(file){
   
 function showDetails(i){
 
-  let r = filtered[i]
-  let name = encodeName(r.Name)
+  let r = filtered[i];
+  if(!r) return;
 
-  let img1 = getIndividual(`${name}-1977.jpeg`)
-  let img2 = getIndividual(`${name}-2020.jpeg`)
-  let img3 = getIndividual(`${name}-2027.jpeg`)
+  let name = encodeName(r.Name);
 
-  let modalImgsHTML = ""
+  let img1 = getIndividual(`${name}-1977.jpeg`);
+  let img2 = getIndividual(`${name}-2020.jpeg`);
+  let img3 = getIndividual(`${name}-2027.jpeg`);
 
-  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
-  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
-  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  let modalImgsHTML = "";
 
-  modalImages.innerHTML = modalImgsHTML
+  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`;
+  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`;
+  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`;
 
-  let html = ""
+  modalImages.innerHTML = modalImgsHTML;
+
+  let html = "";
   for(let k in r){
-    if(k === "_searchText") continue
-    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`
+    if(k === "_searchText") continue;
+    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`;
   }
 
-  modalDetails.innerHTML = html
+  modalDetails.innerHTML = html;
 
-  let hasMorePics = false
-  let decodedName = decodeURIComponent(name)
+  let hasMorePics = false;
+  let decodedName = decodeURIComponent(name);
 
   if(imageIndex && imageIndex.group){
     for(let file in imageIndex.group){
       if(file.startsWith(decodedName + "-")){
-        hasMorePics = true
-        break
+        hasMorePics = true;
+        break;
       }
     }
   }
 
-  moreBtn.style.display = hasMorePics ? "inline-block" : "none"
-  moreBtn.onclick = function(){ openMorePics(name) }
+  moreBtn.style.display = hasMorePics ? "inline-block" : "none";
+  moreBtn.onclick = function(){ openMorePics(name); };
 
-  modal1.style.display = "block"
+  modal1.style.display = "block";
 }
+
 
 function openMorePics(name){
 
