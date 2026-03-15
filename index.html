@@ -286,52 +286,46 @@ max-height:90%;
 <div id="zoomViewer" class="zoomViewer" onclick="closeZoom()">
 <img id="zoomImg">
 </div>
-
 <script>
-
 const API_URL = "https://script.google.com/macros/s/AKfycbzScXIj_0DCDACS29_dGGHj8O36vojdCt_cDqdVvCrB4w3rghvhrr-Z571lRRx7nqCD_g/exec"
-  
+
 let imageIndex = {
-  individual:{},
-  group:{}
+  individual: {},
+  group: {}
 }
 
-let data=[]
-let filtered=[]
-let page=1
-let cardMode=true
+let data = []
+let filtered = []
+let page = 1
+let cardMode = true
 
-const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-<script>
 function escapeHtml(value){
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/'/g, "&#39;")
 }
-</script>
 
-  
-function encodeName(n){return encodeURIComponent(n)}
+function encodeName(n){
+  return encodeURIComponent(n)
+}
 
 function formatDOB(v){
+  if(!v) return ""
 
-if(!v)return ""
+  let d = new Date(v)
+  if(isNaN(d)) return v
 
-let d=new Date(v)
+  let dd = ("0" + d.getDate()).slice(-2)
+  let m = months[d.getMonth()]
 
-if(isNaN(d))return v
-
-let dd=("0"+d.getDate()).slice(-2)
-let m=months[d.getMonth()]
-
-return dd+"-"+m
-
+  return dd + "-" + m
 }
-  
+
 async function loadImageIndex(){
   try{
     const res = await fetch(API_URL + "?action=images")
@@ -343,20 +337,21 @@ async function loadImageIndex(){
     console.error("loadImageIndex failed:", e)
   }
 }
-  
-async function loadData(){
 
+async function loadData(){
   await loadImageIndex()
   console.log("after loadImageIndex:", imageIndex)
 
-  headerImage.src = getGroup("college-1.jpeg")
+  if(typeof headerImage !== "undefined" && headerImage){
+    headerImage.src = getGroup("college-1.jpeg")
+  }
 
   let cached = localStorage.getItem("ceg1977data")
 
   if(cached){
     data = JSON.parse(cached)
     filtered = [...data]
-    buildFilters()
+    buildFilters(data)
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
     render()
@@ -372,7 +367,7 @@ async function loadData(){
 
     localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
-    buildFilters()
+    buildFilters(data)
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
 
@@ -382,272 +377,233 @@ async function loadData(){
     loadingMessage.innerText = "Unable to load directory"
   }
 }
-  
-function scrollToTop(){
-window.scrollTo({top:0, behavior:"smooth"})
-}
-  
-function buildFilters(source = data){
 
-  const currentBranch = branchFilter.value || "ALL";
-  const currentMonth = monthFilter.value || "ALL";
-  const currentAlpha = alphaFilter.value || "ALL";
+function scrollToTop(){
+  window.scrollTo({top:0, behavior:"smooth"})
+}
+
+function buildFilters(source = data){
+  const currentBranch = branchFilter.value || "ALL"
+  const currentMonth = monthFilter.value || "ALL"
+  const currentAlpha = alphaFilter.value || "ALL"
 
   let branches = [...new Set(
     source.map(x => (x.Branch || "").trim()).filter(Boolean)
-  )].sort();
+  )].sort()
 
-  branchFilter.innerHTML = "<option value='ALL'>Branch</option>";
+  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
   branches.forEach(b => {
-    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`;
-  });
+    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`
+  })
 
   let monthValues = [...new Set(
     source.map(x => {
-      let dob = new Date(x.Date_of_birth);
-      return isNaN(dob) ? "" : months[dob.getMonth()];
+      let dob = new Date(x.Date_of_birth)
+      return isNaN(dob) ? "" : months[dob.getMonth()]
     }).filter(Boolean)
-  )];
+  )]
 
-  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>";
+  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
   months.forEach(m => {
     if(monthValues.includes(m)){
-      monthFilter.innerHTML += `<option value="${m}">${m}</option>`;
+      monthFilter.innerHTML += `<option value="${m}">${m}</option>`
     }
-  });
+  })
 
   let letters = [...new Set(
     source.map(x => (x.Name || "").trim().charAt(0).toUpperCase()).filter(Boolean)
-  )].sort();
+  )].sort()
 
-  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>";
+  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
   letters.forEach(a => {
-    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`;
-  });
+    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`
+  })
 
-  if([...branchFilter.options].some(o => o.value === currentBranch)) branchFilter.value = currentBranch;
-  else branchFilter.value = "ALL";
+  if([...branchFilter.options].some(o => o.value === currentBranch)) branchFilter.value = currentBranch
+  else branchFilter.value = "ALL"
 
-  if([...monthFilter.options].some(o => o.value === currentMonth)) monthFilter.value = currentMonth;
-  else monthFilter.value = "ALL";
+  if([...monthFilter.options].some(o => o.value === currentMonth)) monthFilter.value = currentMonth
+  else monthFilter.value = "ALL"
 
-  if([...alphaFilter.options].some(o => o.value === currentAlpha)) alphaFilter.value = currentAlpha;
-  else alphaFilter.value = "ALL";
+  if([...alphaFilter.options].some(o => o.value === currentAlpha)) alphaFilter.value = currentAlpha
+  else alphaFilter.value = "ALL"
 }
 
-
 function applyFilters(changedFilter = ""){
+  let b = branchFilter.value
+  let m = monthFilter.value
+  let a = alphaFilter.value
+  let s = search.value.toLowerCase()
 
-  let b = branchFilter.value;
-  let m = monthFilter.value;
-  let a = alphaFilter.value;
-  let s = search.value.toLowerCase();
-
-  // Step 1: apply all active filters to get final result
   filtered = data.filter(d => {
-    let dob = new Date(d.Date_of_birth);
-    let mmm = isNaN(dob) ? "" : months[dob.getMonth()];
-    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase();
+    let dob = new Date(d.Date_of_birth)
+    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
+    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase()
 
-    if(b !== "ALL" && d.Branch !== b) return false;
-    if(m !== "ALL" && mmm !== m) return false;
-    if(a !== "ALL" && firstLetter !== a) return false;
-    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false;
+    if(b !== "ALL" && d.Branch !== b) return false
+    if(m !== "ALL" && mmm !== m) return false
+    if(a !== "ALL" && firstLetter !== a) return false
+    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
 
-    return true;
-  });
+    return true
+  })
 
-  // Step 2: build dynamic options based on other selected filters
   let sourceForDynamicFilters = data.filter(d => {
-    let dob = new Date(d.Date_of_birth);
-    let mmm = isNaN(dob) ? "" : months[dob.getMonth()];
-    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase();
+    let dob = new Date(d.Date_of_birth)
+    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
+    let firstLetter = (d.Name || "").trim().charAt(0).toUpperCase()
 
-    if(changedFilter !== "branch" && b !== "ALL" && d.Branch !== b) return false;
-    if(changedFilter !== "month" && m !== "ALL" && mmm !== m) return false;
-    if(changedFilter !== "alpha" && a !== "ALL" && firstLetter !== a) return false;
-    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false;
+    if(changedFilter !== "branch" && b !== "ALL" && d.Branch !== b) return false
+    if(changedFilter !== "month" && m !== "ALL" && mmm !== m) return false
+    if(changedFilter !== "alpha" && a !== "ALL" && firstLetter !== a) return false
+    if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
 
-    return true;
-  });
+    return true
+  })
 
-  buildFilters(sourceForDynamicFilters);
+  buildFilters(sourceForDynamicFilters)
 
-  page = 1;
-  render();
+  page = 1
+  render()
 }
 
 branchFilter.onchange = () => applyFilters("branch")
 monthFilter.onchange = () => applyFilters("month")
 alphaFilter.onchange = () => applyFilters("alpha")
 search.oninput = () => applyFilters("search")
-  
-function clearFilters(){
-  search.value = "";
-  branchFilter.value = "ALL";
-  monthFilter.value = "ALL";
-  alphaFilter.value = "ALL";
-  filtered = [...data];
-  buildFilters(data);
-  page = 1;
-  render();
-}
 
+function clearFilters(){
+  search.value = ""
+  branchFilter.value = "ALL"
+  monthFilter.value = "ALL"
+  alphaFilter.value = "ALL"
+  filtered = [...data]
+  buildFilters(data)
+  page = 1
+  render()
+}
 
 function pageSize(){
-return parseInt(document.getElementById("pageSize").options[
-document.getElementById("pageSize").selectedIndex
-].value)
+  return parseInt(document.getElementById("pageSize").options[
+    document.getElementById("pageSize").selectedIndex
+  ].value)
 }
 
-document.getElementById("pageSize").onchange=function(){
-page=1
-render()
-scrollToTop()
+document.getElementById("pageSize").onchange = function(){
+  page = 1
+  render()
+  scrollToTop()
 }
 
 function paginate(){
-
-let start=(page-1)*pageSize()
-
-return filtered.slice(start,start+pageSize())
-
+  let start = (page - 1) * pageSize()
+  return filtered.slice(start, start + pageSize())
 }
 
 function render(){
+  recordCount.innerText = filtered.length + " records"
+  viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
 
-recordCount.innerText=filtered.length+" records"
+  if(cardMode) renderCards()
+  else renderTable()
 
-viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
-
-if(cardMode)renderCards()
-else renderTable()
-
-updatePagination()
-
+  updatePagination()
 }
 
 function renderTable(){
+  let rows = paginate()
 
-let rows=paginate()
+  let html = "<table><thead><tr><th>Name</th><th>Branch</th><th>DOB</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody>"
 
-let html="<table><thead><tr><th>Name</th><th>Branch</th><th>DOB</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody>"
+  rows.forEach((r,i) => {
+    let idx = (page - 1) * pageSize() + i
 
-rows.forEach((r,i)=>{
+    html += `
+    <tr>
+      <td>${r.Name}</td>
+      <td>${r.Branch}</td>
+      <td>${formatDOB(r.Date_of_birth)}</td>
+      <td>${r.Email_address || ""}</td>
+      <td>${r.Phone_numbers || ""}</td>
+      <td><button onclick="showDetails(${idx})">View Details</button></td>
+    </tr>
+    `
+  })
 
-let idx=(page-1)*pageSize()+i
-
-html+=`
-
-<tr>
-<td>${r.Name}</td>
-<td>${r.Branch}</td>
-<td>${formatDOB(r.Date_of_birth)}</td>
-<td>${r.Email_address||""}</td>
-<td>${r.Phone_numbers||""}</td>
-<td><button onclick="showDetails(${idx})">View Details</button></td>
-</tr>
-
-`
-
-})
-
-html+="</tbody></table>"
-
-tableView.innerHTML=html
-
+  html += "</tbody></table>"
+  tableView.innerHTML = html
 }
 
 function renderCards(){
+  let rows = paginate()
+  let html = "<div class='cardGrid'>"
 
-let rows=paginate()
+  rows.forEach((r,i) => {
+    let idx = (page - 1) * pageSize() + i
+    let name = encodeName(r.Name)
 
-let html="<div class='cardGrid'>"
+    html += `
+    <div class="card">
+      <div class="cardImages">
+        <img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+      </div>
 
-rows.forEach((r,i)=>{
+      <b>${r.Name}</b><br>
+      ${r.Branch}<br>
+      ${formatDOB(r.Date_of_birth)}<br>
+      ${r.Email_address || ""}<br>
+      ${r.Phone_numbers || ""}<br><br>
 
-let idx=(page-1)*pageSize()+i
+      <button onclick="showDetails(${idx})">View Details</button>
+    </div>
+    `
+  })
 
-let name=encodeName(r.Name)
-
-html+=`
-
-<div class="card">
-
-<div class="cardImages">
-
-<img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-<img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
-
-</div>
-
-<b>${r.Name}</b><br>
-${r.Branch}<br>
-${formatDOB(r.Date_of_birth)}<br>
-${r.Email_address||""}<br>
-${r.Phone_numbers||""}<br><br>
-
-<button onclick="showDetails(${idx})">View Details</button>
-
-</div>
-
-`
-
-})
-
-html+="</div>"
-
-cardView.innerHTML=html
-
+  html += "</div>"
+  cardView.innerHTML = html
 }
 
 function toggleView(){
+  cardMode = !cardMode
 
-cardMode=!cardMode
+  tableView.style.display = cardMode ? "none" : "block"
+  cardView.style.display = cardMode ? "block" : "none"
 
-tableView.style.display=cardMode?"none":"block"
-cardView.style.display=cardMode?"block":"none"
+  viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
 
-viewBtn.innerText=cardMode?"Show Table View":"Show Card View"
-
-render()
-
+  render()
 }
 
 function updatePagination(){
+  let total = Math.ceil(filtered.length / pageSize())
 
-let total=Math.ceil(filtered.length/pageSize())
+  pageInfo.innerText = "Page " + page + " / " + (total || 1)
 
-pageInfo.innerText="Page "+page+" / "+(total||1)
-
-prevBtn.disabled=(page===1)
-nextBtn.disabled=(page===total)
-
+  prevBtn.disabled = (page === 1)
+  nextBtn.disabled = (page === total || total === 0)
 }
 
 function prevPage(){
-if(page>1){
-page--;
-render();
-scrollToTop();
-}
+  if(page > 1){
+    page--
+    render()
+    scrollToTop()
+  }
 }
 
 function nextPage(){
+  let total = Math.ceil(filtered.length / pageSize())
 
-let total=Math.ceil(filtered.length/pageSize())
-
-if(page<total){
-page++;
-render();
-scrollToTop();
-}
-
+  if(page < total){
+    page++
+    render()
+    scrollToTop()
+  }
 }
 
 function getIndividual(file){
-
   if(!imageIndex || !imageIndex.individual) return ""
 
   let decoded = decodeURIComponent(file)
@@ -655,72 +611,65 @@ function getIndividual(file){
 
   if(!id) return ""
 
-  return "https://drive.google.com/thumbnail?id="+id+"&sz=w800"
-
+  return "https://drive.google.com/thumbnail?id=" + id + "&sz=w800"
 }
 
 function getGroup(file){
-
   if(!imageIndex || !imageIndex.group) return ""
 
   let decoded = decodeURIComponent(file)
-
   let id = imageIndex.group[decoded]
 
   if(!id) return ""
 
   return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
-
 }
-  
+
 function showDetails(i){
+  let r = filtered[i]
+  if(!r) return
 
-  let r = filtered[i];
-  if(!r) return;
+  let name = encodeName(r.Name)
 
-  let name = encodeName(r.Name);
+  let img1 = getIndividual(`${name}-1977.jpeg`)
+  let img2 = getIndividual(`${name}-2020.jpeg`)
+  let img3 = getIndividual(`${name}-2027.jpeg`)
 
-  let img1 = getIndividual(`${name}-1977.jpeg`);
-  let img2 = getIndividual(`${name}-2020.jpeg`);
-  let img3 = getIndividual(`${name}-2027.jpeg`);
+  let modalImgsHTML = ""
 
-  let modalImgsHTML = "";
+  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
+  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
 
-  if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`;
-  if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`;
-  if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`;
+  modalImages.innerHTML = modalImgsHTML
 
-  modalImages.innerHTML = modalImgsHTML;
-
-  let html = "";
+  let html = ""
   for(let k in r){
-    if(k === "_searchText") continue;
-    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`;
+    if(k === "_searchText") continue
+    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`
   }
 
-  modalDetails.innerHTML = html;
+  modalDetails.innerHTML = html
 
-  let hasMorePics = false;
-  let decodedName = decodeURIComponent(name);
+  let hasMorePics = false
+  let decodedName = decodeURIComponent(name)
 
   if(imageIndex && imageIndex.group){
     for(let file in imageIndex.group){
       if(file.startsWith(decodedName + "-")){
-        hasMorePics = true;
-        break;
+        hasMorePics = true
+        break
       }
     }
   }
 
-  moreBtn.style.display = hasMorePics ? "inline-block" : "none";
-  moreBtn.onclick = function(){ openMorePics(name); };
+  moreBtn.style.display = hasMorePics ? "inline-block" : "none"
+  moreBtn.onclick = function(){ openMorePics(name) }
 
-  modal1.style.display = "block";
+  modal1.style.display = "block"
 }
 
-
 function openMorePics(name){
-
   let decodedName = decodeURIComponent(name)
   let html = ""
 
@@ -743,56 +692,39 @@ function openMorePics(name){
   modal2.style.display = "block"
 }
 
-
 function openGallery(){
+  let html = ""
 
-let html=""
-
-for(let file in imageIndex.group){
-
-  if(file.startsWith("group-")){
-
-    html += `<img loading="lazy"
-      src="${getGroup(file)}"
-      onclick="zoom(this)">`
-
+  for(let file in imageIndex.group){
+    if(file.startsWith("group-")){
+      html += `<img loading="lazy" src="${getGroup(file)}" onclick="zoom(this)">`
+    }
   }
 
-}
-
-galleryGrid.innerHTML=html
-
-galleryModal.style.display="block"
-
+  galleryGrid.innerHTML = html
+  galleryModal.style.display = "block"
 }
 
 function closeGallery(){
-galleryModal.style.display="none"
+  galleryModal.style.display = "none"
 }
 
 function zoom(img){
-
-zoomImg.src=img.src
-
-zoomViewer.style.display="flex"
-
+  zoomImg.src = img.src
+  zoomViewer.style.display = "flex"
 }
 
 function closeZoom(){
-
-zoomViewer.style.display="none"
-
+  zoomViewer.style.display = "none"
 }
 
-window.onclick=function(e){
-
-if(e.target.classList.contains("modal"))
-e.target.style.display="none"
-
+window.onclick = function(e){
+  if(e.target.classList.contains("modal")){
+    e.target.style.display = "none"
+  }
 }
 
 loadData()
-
 </script>
 
 </body>
