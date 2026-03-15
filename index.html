@@ -92,24 +92,36 @@ margin-top:14px;
 }
 
 .card{
-border:1px solid #999;
-padding:8px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  min-height:220px;
 }
 
 .cardImages{
   display:flex;
   gap:6px;
-  margin-bottom:6px;
-  align-items:flex-start;
+  margin-bottom:8px;
+  min-height:120px;
+  align-items:center;
+  justify-content:center;
 }
+
 
 .cardImages img{
   width:31%;
   height:120px;
   object-fit:contain;
-  align-self:flex-start;
-  display:block;
   background:#f7f7f7;
+  border-radius:4px;
+}
+
+.cardImages:empty{
+  display:none;
 }
 
 
@@ -590,9 +602,7 @@ function renderCards(){
     html+=`
       <div class="card">
         <div class="cardImages">
-          <img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
-          <img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
-          <img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
+        ${imagesHTML}
         </div>
 
         <b>${escapeHtml(r.Name)}</b><br>
@@ -693,11 +703,17 @@ function showDetails(i){
   let r = filtered[i]
   let name = encodeName(r.Name)
 
-  modalImages.innerHTML = `
-    <img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
-    <img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
-    <img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="handleImageError(this)">
-  `
+  let img1 = getIndividual(`${name}-1977.jpeg`)
+  let img2 = getIndividual(`${name}-2020.jpeg`)
+  let img3 = getIndividual(`${name}-2027.jpeg`)
+  
+  let html = ""
+  
+  if(img1) html += `<img loading="lazy" src="${img1}" onclick="zoom(this)">`
+  if(img2) html += `<img loading="lazy" src="${img2}" onclick="zoom(this)">`
+  if(img3) html += `<img loading="lazy" src="${img3}" onclick="zoom(this)">`
+  
+  modalImages.innerHTML = html
 
   let html = ""
 
