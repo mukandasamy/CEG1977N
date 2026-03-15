@@ -847,12 +847,11 @@ function showDetails(i){
   let r = filtered[i]
   if(!r) return
 
-  let name = encodeName(r.Name)
+  let name = encodeName(r.Name || "")
 
   let img1 = r._img1977 || ""
   let img2 = r._img2020 || ""
   let img3 = r._img2027 || ""
-
 
   let modalImgsHTML = ""
 
@@ -860,22 +859,21 @@ function showDetails(i){
   if(img2) modalImgsHTML += `<img loading="lazy" decoding="async" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
   if(img3) modalImgsHTML += `<img loading="lazy" decoding="async" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
 
-
   modalImages.innerHTML = modalImgsHTML
 
-for(let k in r){
+  let html = ""
 
-  if(k.startsWith("_")) continue
+  for(let k in r){
+    if(k.startsWith("_")) continue
 
-  let value = r[k] || ""
+    let value = r[k] || ""
 
-  if(k === "Date_of_birth" || k === "Anniversary_Date"){
-    value = formatDOB(value)
+    if(k === "Date_of_birth" || k === "Anniversary_Date"){
+      value = formatDOB(value)
+    }
+
+    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(value)}<br>`
   }
-
-  html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(value)}<br>`
-}
-
 
   modalDetails.innerHTML = html
 
@@ -897,7 +895,7 @@ for(let k in r){
   modal1.style.display = "block"
 }
 
-function openMorePics(name){
+  function openMorePics(name){
   let decodedName = decodeURIComponent(name)
   let html = ""
 
