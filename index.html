@@ -111,23 +111,22 @@ top:0;
 }
 
 .cardImages{
-  display:flex;
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
   gap:6px;
   height:110px;
   min-height:110px;
-  align-items:flex-start;
-  justify-content:flex-start;
   margin-bottom:12px;
+  align-items:start;
 }
 
 .cardImages img{
-  width:calc(33.33% - 4px);
-  height:110px;
+  width:100% !important;
+  height:110px !important;
   object-fit:contain;
   border-radius:6px;
-  flex:0 0 auto;
+  display:block;
 }
-
 
 .cardBody{
   display:flex;
