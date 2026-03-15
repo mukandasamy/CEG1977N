@@ -104,11 +104,19 @@ top:0;
   flex-direction: column;
   background: #fff;
   border-radius: 12px;
+  border: 1px solid #d8d8d8;   /* restores the border */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06); /* subtle depth like before */
   overflow: hidden;
   box-sizing: border-box;
   padding: 12px;
+  min-height: 320px;
 }
 
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+  
 .cardImages {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
