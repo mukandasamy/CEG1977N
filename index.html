@@ -93,24 +93,74 @@ top:0;
 }
 
 .cardGrid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
-gap:14px;
-margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
 }
 
 .card{
-border:1px solid #999;
-padding:8px;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:320px;
+  padding:14px;
+  border:1px solid #ddd;
+  border-radius:12px;
+  background:#fff;
+  box-sizing:border-box;
 }
 
 .cardImages{
-display:flex;
-gap:6px;
-margin-bottom:6px;
+  display:flex;
+  gap:6px;
+  height:110px;
+  min-height:110px;
+  align-items:flex-start;
+  justify-content:flex-start;
+  margin-bottom:12px;
 }
 
-.footer{
+.cardImages img{
+  max-width:calc(33.33% - 4px);
+  max-height:110px;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:6px;
+  flex:0 0 auto;
+}
+
+.cardBody{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  flex:1;
+}
+
+.cardName{
+  font-weight:700;
+  font-size:16px;
+  line-height:1.3;
+  min-height:42px;
+  word-break:break-word;
+}
+
+.cardMeta{
+  font-size:14px;
+  line-height:1.35;
+  word-break:break-word;
+}
+
+.cardActions{
+  margin-top:auto;
+  padding-top:12px;
+}
+
+.cardActions button{
+  width:100%;
+}
+
+  .footer{
 margin-top:12px;
 display:flex;
 gap:10px;
@@ -667,24 +717,26 @@ function renderCards(){
 
   rows.forEach((r,i) => {
     let idx = (page - 1) * pageSize() + i
-    
 
     html += `
     <div class="card">
       <div class="cardImages">
-      <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
-      <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
-      <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
-
+        <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.display='none'">
       </div>
 
-      <b>${r.Name}</b><br>
-      ${r.Branch}<br>
-      ${formatDOB(r.Date_of_birth)}<br>
-      ${r.Email_address || ""}<br>
-      ${r.Phone_numbers || ""}<br><br>
+      <div class="cardBody">
+        <div class="cardName">${r.Name || ""}</div>
+        <div class="cardMeta">${r.Branch || ""}</div>
+        <div class="cardMeta">${formatDOB(r.Date_of_birth)}</div>
+        <div class="cardMeta">${r.Email_address || ""}</div>
+        <div class="cardMeta">${r.Phone_numbers || ""}</div>
+      </div>
 
-      <button onclick="showDetails(${idx})">View Details</button>
+      <div class="cardActions">
+        <button onclick="showDetails(${idx})">View Details</button>
+      </div>
     </div>
     `
   })
@@ -693,7 +745,7 @@ function renderCards(){
   cardView.innerHTML = html
 }
 
-function toggleView(){
+  function toggleView(){
   cardMode = !cardMode
 
   tableView.style.display = cardMode ? "none" : "block"
