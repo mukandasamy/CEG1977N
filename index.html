@@ -187,7 +187,7 @@ max-height:90%;
 
 <header>
 
-<img src="group_pics/college-1.jpeg">
+<img id="headerImage" alt="CEG 1977 header image">
 
 <h1>CEG 1977 Batch Golden Jubilee</h1>
 
@@ -393,19 +393,19 @@ async function loadData(){
 
   await loadImageIndex()
 
-  headerImage.src = getGroup("college-1.jpeg") || PLACEHOLDER_IMG
-  headerImage.onerror = function(){
-    this.onerror = null
-    this.src = PLACEHOLDER_IMG
+  const headerImg = document.getElementById("headerImage")
+  if(headerImg){
+    headerImg.src = getGroup("college-1.jpeg")
   }
 
   let cached = localStorage.getItem(DATA_CACHE_KEY)
 
   if(cached){
-    data = normalizeData(JSON.parse(cached))
+    data = JSON.parse(cached)
     filtered = [...data]
     buildFilters()
-    showLoadedState()
+    loadingMessage.style.display = "none"
+    filters.style.display = "flex"
     render()
     return
   }
@@ -414,13 +414,14 @@ async function loadData(){
     let res = await fetch(API_URL + "?action=data")
     let fresh = await res.json()
 
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(fresh))
-
-    data = normalizeData(fresh)
+    data = fresh
     filtered = [...data]
 
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(fresh))
+
     buildFilters()
-    showLoadedState()
+    loadingMessage.style.display = "none"
+    filters.style.display = "flex"
 
     render()
   }catch(e){
@@ -428,6 +429,7 @@ async function loadData(){
     loadingMessage.innerText = "Unable to load directory"
   }
 }
+
 
 function refreshDirectory(){
   localStorage.removeItem(DATA_CACHE_KEY)
