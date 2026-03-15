@@ -863,11 +863,19 @@ function showDetails(i){
 
   modalImages.innerHTML = modalImgsHTML
 
-  let html = ""
-  for(let k in r){
-    if(k.startsWith("_")) continue
-    html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`
+for(let k in r){
+
+  if(k.startsWith("_")) continue
+
+  let value = r[k] || ""
+
+  if(k === "Date_of_birth" || k === "Anniversary_Date"){
+    value = formatDOB(value)
   }
+
+  html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(value)}<br>`
+}
+
 
   modalDetails.innerHTML = html
 
