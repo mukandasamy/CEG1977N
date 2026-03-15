@@ -2,6 +2,14 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+content="
+default-src 'self';
+img-src 'self' https://drive.google.com https://*.googleusercontent.com https://*.usercontent.google.com data:;
+style-src 'self' 'unsafe-inline';
+script-src 'self' 'unsafe-inline';
+connect-src https://script.google.com https://script.googleusercontent.com;
+">
 <title>CEG 1977 Batch Golden Jubilee</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -92,59 +100,21 @@ margin-top:14px;
 }
 
 .card{
-  border:1px solid #ddd;
-  border-radius:6px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);
-  padding:8px;
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-start;
-  min-height:220px;
+border:1px solid #999;
+padding:8px;
 }
 
 .cardImages{
-  display:flex;
-  gap:6px;
-  margin-bottom:8px;
-  min-height:120px;
-  align-items:center;
-  justify-content:center;
+display:flex;
+gap:6px;
+margin-bottom:6px;
 }
-
-
-.cardImages img{
-  width:31%;
-  height:120px;
-  object-fit:contain;
-  background:#f7f7f7;
-  border-radius:4px;
-}
-
-.cardImages:empty{
-  display:none;
-}
-
 
 .footer{
 margin-top:12px;
-display:none;
+display:flex;
 gap:10px;
 align-items:center;
-flex-wrap:wrap;
-}
-
-.clearBtn{
-background:#8b1e3f;
-}
-
-.secondaryBtn{
-background:#6b7280;
-}
-
-.placeholderText{
-color:#666;
-font-style:italic;
-padding:8px 0;
 }
 
 .modal{
@@ -210,7 +180,7 @@ max-height:90%;
 
 <header>
 
-<img id="headerImage" alt="CEG 1977 header image">
+<img id="headerImage">
 
 <h1>CEG 1977 Batch Golden Jubilee</h1>
 
@@ -228,10 +198,9 @@ max-height:90%;
 <select id="monthFilter"></select>
 <select id="alphaFilter"></select>
 
-<button class="clearBtn" onclick="clearFilters()">Clear Filters</button>
+<button onclick="clearFilters()">Clear Filters</button>
 
 <button id="viewBtn" onclick="toggleView()">Show Card View</button>
-<button class="secondaryBtn" onclick="refreshDirectory()">Refresh Data</button>
 
 <div id="recordCount"></div>
 
@@ -240,7 +209,7 @@ max-height:90%;
 <div id="tableView" style="display:none"></div>
 <div id="cardView"></div>
 
-<div id="footerBar" class="footer">
+<div class="footer">
 
 <select id="pageSize">
 <option>10</option>
@@ -318,22 +287,10 @@ max-height:90%;
 <img id="zoomImg">
 </div>
 
-
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbylUPkqc2zPDxcBOjThRbOxn5Xe_Q-CtWRwDahHRefsGTkkYIGzEAJbXQxT5m4mBz9q/exec"
-const CACHE_VERSION = "v2"
-const DATA_CACHE_KEY = "ceg1977data_" + CACHE_VERSION
-const IMAGE_CACHE_KEY = "ceg1977images_" + CACHE_VERSION
-const PLACEHOLDER_IMG = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="260" viewBox="0 0 360 260">
-  <rect width="100%" height="100%" fill="#f3f4f6"/>
-  <rect x="110" y="50" width="140" height="100" rx="12" fill="#d1d5db"/>
-  <circle cx="180" cy="95" r="26" fill="#9ca3af"/>
-  <path d="M120 170c18-28 44-42 60-42s42 14 60 42" fill="#9ca3af"/>
-  <text x="50%" y="228" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#6b7280">Photo not available</text>
-</svg>`)
-
+const API_URL = "https://script.google.com/macros/s/AKfycbzScXIj_0DCDACS29_dGGHj8O36vojdCt_cDqdVvCrB4w3rghvhrr-Z571lRRx7nqCD_g/exec"
+  
 let imageIndex = {
   individual:{},
   group:{}
@@ -348,169 +305,51 @@ const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov",
 
 function encodeName(n){return encodeURIComponent(n)}
 
-function escapeHtml(value){
-  return String(value ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;")
-}
-
 function formatDOB(v){
 
-  if(!v)return ""
+if(!v)return ""
 
-  let d=new Date(v)
+let d=new Date(v)
 
-  if(isNaN(d))return v
+if(isNaN(d))return v
 
-  let dd=("0"+d.getDate()).slice(-2)
-  let m=months[d.getMonth()]
+let dd=("0"+d.getDate()).slice(-2)
+let m=months[d.getMonth()]
 
-  return dd+"-"+m
+return dd+"-"+m
 
 }
-
-function buildSearchText(record){
-  return Object.values(record)
-    .filter(v => v !== null && v !== undefined)
-    .join(" ")
-    .toLowerCase()
-}
-
-function normalizeData(rows){
-  return rows.map(row => ({
-    ...row,
-    _searchText: buildSearchText(row)
-  }))
-}
-
-function showLoadedState(){
-  loadingMessage.style.display = "none"
-  filters.style.display = "flex"
-  footerBar.style.display = "flex"
-}
-
-function rebuildDynamicFilters(){
-
-  let selectedBranch = branchFilter.value || "ALL"
-  let selectedMonth = monthFilter.value || "ALL"
-  let selectedAlpha = alphaFilter.value || "ALL"
-  let searchText = search.value.toLowerCase()
-
-  let branchBase = data.filter(d=>{
-    let dob = new Date(d.Date_of_birth)
-    let mmm = months[dob.getMonth()]
-
-    if(selectedMonth != "ALL" && mmm != selectedMonth) return false
-    if(selectedAlpha != "ALL" && d.Name[0].toUpperCase() != selectedAlpha) return false
-    if(searchText && !(d._searchText || "").includes(searchText)) return false
-
-    return true
-  })
-
-  let monthBase = data.filter(d=>{
-    let dob = new Date(d.Date_of_birth)
-    let mmm = months[dob.getMonth()]
-
-    if(selectedBranch != "ALL" && d.Branch != selectedBranch) return false
-    if(selectedAlpha != "ALL" && d.Name[0].toUpperCase() != selectedAlpha) return false
-    if(searchText && !(d._searchText || "").includes(searchText)) return false
-
-    return true
-  })
-
-  let alphaBase = data.filter(d=>{
-    let dob = new Date(d.Date_of_birth)
-    let mmm = months[dob.getMonth()]
-
-    if(selectedBranch != "ALL" && d.Branch != selectedBranch) return false
-    if(selectedMonth != "ALL" && mmm != selectedMonth) return false
-    if(searchText && !(d._searchText || "").includes(searchText)) return false
-
-    return true
-  })
-
-  let branches = [...new Set(branchBase.map(x=>x.Branch).filter(Boolean))].sort()
-
-  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
-  branches.forEach(b=>{
-    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`
-  })
-  branchFilter.value = branches.includes(selectedBranch) ? selectedBranch : "ALL"
-
-  let monthsAvailable = [...new Set(monthBase.map(d=>{
-    let dob = new Date(d.Date_of_birth)
-    return isNaN(dob) ? "" : months[dob.getMonth()]
-  }).filter(Boolean))]
-
-  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
-  months.forEach(m=>{
-    if(monthsAvailable.includes(m)){
-      monthFilter.innerHTML += `<option value="${m}">${m}</option>`
-    }
-  })
-  monthFilter.value = monthsAvailable.includes(selectedMonth) ? selectedMonth : "ALL"
-
-  let letters = [...new Set(alphaBase
-    .map(x => (x.Name || "").trim())
-    .filter(Boolean)
-    .map(n => n[0].toUpperCase())
-  )].sort()
-
-  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
-  letters.forEach(a=>{
-    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`
-  })
-  alphaFilter.value = letters.includes(selectedAlpha) ? selectedAlpha : "ALL"
-}
-
   
 async function loadImageIndex(){
   try{
-    let cached = localStorage.getItem(IMAGE_CACHE_KEY)
-
-    if(cached){
-      imageIndex = JSON.parse(cached)
-      return
-    }
-
     const res = await fetch(API_URL + "?action=images")
     const text = await res.text()
+    console.log("images raw response:", text)
     imageIndex = JSON.parse(text)
-
-    localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(imageIndex))
+    console.log("imageIndex loaded:", imageIndex)
   }catch(e){
     console.error("loadImageIndex failed:", e)
-    imageIndex = { individual:{}, group:{} }
   }
 }
-
+  
 async function loadData(){
 
   await loadImageIndex()
+  console.log("after loadImageIndex:", imageIndex)
 
-  const headerImg = document.getElementById("headerImage")
-  if(headerImg){
-    headerImg.src = getGroup("college-1.jpeg")
-  }
+  headerImage.src = getGroup("college-1.jpeg")
 
-  let cached = localStorage.getItem(DATA_CACHE_KEY)
+  let cached = localStorage.getItem("ceg1977data")
 
   if(cached){
     data = JSON.parse(cached)
     filtered = [...data]
-  
     buildFilters()
-    rebuildDynamicFilters()
-  
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
     render()
     return
   }
-
 
   try{
     let res = await fetch(API_URL + "?action=data")
@@ -519,14 +358,9 @@ async function loadData(){
     data = fresh
     filtered = [...data]
 
-    buildFilters()
-    rebuildDynamicFilters()
-
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(fresh))
+    localStorage.setItem("ceg1977data", JSON.stringify(fresh))
 
     buildFilters()
-    rebuildDynamicFilters()
-    
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
 
@@ -536,68 +370,56 @@ async function loadData(){
     loadingMessage.innerText = "Unable to load directory"
   }
 }
-
-
-function refreshDirectory(){
-  localStorage.removeItem(DATA_CACHE_KEY)
-  localStorage.removeItem(IMAGE_CACHE_KEY)
-  location.reload()
-}
-
+  
 function scrollToTop(){
-  window.scrollTo({top:0, behavior:"smooth"})
+window.scrollTo({top:0, behavior:"smooth"})
 }
-
+  
 function buildFilters(){
 
-  let branches = [...new Set(data.map(x => x.Branch).filter(Boolean))].sort()
+let branches=[...new Set(data.map(x=>x.Branch))].sort()
 
-  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
-  branches.forEach(b => branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`)
+branchFilter.innerHTML="<option value='ALL'>Branch</option>"
 
-  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
-  months.forEach(m => monthFilter.innerHTML += `<option value="${m}">${m}</option>`)
+branches.forEach(b=>branchFilter.innerHTML+=`<option>${b}</option>`)
 
-  let letters = [...new Set(
-    data.map(x => (x.Name || "").trim())
-        .filter(Boolean)
-        .map(n => n[0].toUpperCase())
-  )].sort()
+monthFilter.innerHTML="<option value='ALL'>DOB Jan-Dec</option>"
 
-  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
-  letters.forEach(a => alphaFilter.innerHTML += `<option value="${a}">${a}</option>`)
+months.forEach(m=>monthFilter.innerHTML+=`<option>${m}</option>`)
 
-  branchFilter.value = "ALL"
-  monthFilter.value = "ALL"
-  alphaFilter.value = "ALL"
+let letters=[...new Set(data.map(x=>x.Name[0].toUpperCase()))].sort()
+
+alphaFilter.innerHTML="<option value='ALL'>Name A - Z</option>"
+
+letters.forEach(a=>alphaFilter.innerHTML+=`<option>${a}</option>`)
+
 }
-
 
 function applyFilters(){
 
-  let b = branchFilter.value
-  let m = monthFilter.value
-  let a = alphaFilter.value
-  let s = search.value.toLowerCase()
+let b=branchFilter.value
+let m=monthFilter.value
+let a=alphaFilter.value
+let s=search.value.toLowerCase()
 
-  filtered = data.filter(d => {
-    let dob = new Date(d.Date_of_birth)
-    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
+filtered=data.filter(d=>{
 
-    if(b != "ALL" && d.Branch != b) return false
-    if(m != "ALL" && mmm != m) return false
-    if(a != "ALL" && (d.Name || "").charAt(0).toUpperCase() != a) return false
-    if(s && !(d._searchText || "").includes(s)) return false
+let dob=new Date(d.Date_of_birth)
+let mmm=months[dob.getMonth()]
 
-    return true
-  })
+if(b!="ALL" && d.Branch!=b) return false
+if(m!="ALL" && mmm!=m) return false
+if(a!="ALL" && d.Name[0].toUpperCase()!=a) return false
+if(s && !Object.values(d).join(" ").toLowerCase().includes(s)) return false
 
-  rebuildDynamicFilters()
+return true
 
-  page = 1
-  render()
+})
+
+page=1
+render()
+
 }
-
 
 branchFilter.onchange=applyFilters
 monthFilter.onchange=applyFilters
@@ -606,185 +428,177 @@ search.oninput=applyFilters
 
 function clearFilters(){
 
-  search.value = ""
-  branchFilter.value = "ALL"
-  monthFilter.value = "ALL"
-  alphaFilter.value = "ALL"
+search.value=""
+branchFilter.value="ALL"
+monthFilter.value="ALL"
+alphaFilter.value="ALL"
 
-  filtered = [...data]
+filtered=[...data]
 
-  rebuildDynamicFilters()
+render()
 
-  page = 1
-  render()
 }
 
-
 function pageSize(){
-  return parseInt(document.getElementById("pageSize").options[
-    document.getElementById("pageSize").selectedIndex
-  ].value)
+return parseInt(document.getElementById("pageSize").options[
+document.getElementById("pageSize").selectedIndex
+].value)
 }
 
 document.getElementById("pageSize").onchange=function(){
-  page=1
-  render()
-  scrollToTop()
+page=1
+render()
+scrollToTop()
 }
 
 function paginate(){
 
-  let start=(page-1)*pageSize()
+let start=(page-1)*pageSize()
 
-  return filtered.slice(start,start+pageSize())
+return filtered.slice(start,start+pageSize())
 
 }
 
 function render(){
 
-  recordCount.innerText=filtered.length+" records"
+recordCount.innerText=filtered.length+" records"
 
-  viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
+viewBtn.innerText = cardMode ? "Show Table View" : "Show Card View"
 
-  if(cardMode)renderCards()
-  else renderTable()
+if(cardMode)renderCards()
+else renderTable()
 
-  updatePagination()
+updatePagination()
 
 }
 
 function renderTable(){
 
-  let rows=paginate()
+let rows=paginate()
 
-  let html="<table><thead><tr><th>Name</th><th>Branch</th><th>DOB</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody>"
+let html="<table><thead><tr><th>Name</th><th>Branch</th><th>DOB</th><th>Email</th><th>Phone</th><th>Action</th></tr></thead><tbody>"
 
-  rows.forEach((r,i)=>{
+rows.forEach((r,i)=>{
 
-    let idx=(page-1)*pageSize()+i
+let idx=(page-1)*pageSize()+i
 
-    html+=`
-      <tr>
-        <td>${escapeHtml(r.Name)}</td>
-        <td>${escapeHtml(r.Branch)}</td>
-        <td>${escapeHtml(formatDOB(r.Date_of_birth))}</td>
-        <td>${escapeHtml(r.Email_address||"")}</td>
-        <td>${escapeHtml(r.Phone_numbers||"")}</td>
-        <td><button onclick="showDetails(${idx})">View Details</button></td>
-      </tr>
-    `
+html+=`
 
-  })
+<tr>
+<td>${r.Name}</td>
+<td>${r.Branch}</td>
+<td>${formatDOB(r.Date_of_birth)}</td>
+<td>${r.Email_address||""}</td>
+<td>${r.Phone_numbers||""}</td>
+<td><button onclick="showDetails(${idx})">View Details</button></td>
+</tr>
 
-  html+="</tbody></table>"
+`
 
-  tableView.innerHTML=html
+})
+
+html+="</tbody></table>"
+
+tableView.innerHTML=html
 
 }
 
 function renderCards(){
 
-  let rows = paginate()
+let rows=paginate()
 
-  let html = "<div class='cardGrid'>"
+let html="<div class='cardGrid'>"
 
-  rows.forEach((r,i)=>{
+rows.forEach((r,i)=>{
 
-    let idx = (page-1)*pageSize()+i
-    let name = encodeName(r.Name)
+let idx=(page-1)*pageSize()+i
 
-    let img1 = getIndividual(`${name}-1977.jpeg`)
-    let img2 = getIndividual(`${name}-2020.jpeg`)
-    let img3 = getIndividual(`${name}-2027.jpeg`)
+let name=encodeName(r.Name)
 
-    let imagesHTML = ""
+html+=`
 
-    if(img1) imagesHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
-    if(img2) imagesHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
-    if(img3) imagesHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
+<div class="card">
 
-    html += `
-      <div class="card">
+<div class="cardImages">
 
-        <div class="cardImages">
-          ${imagesHTML}
-        </div>
+<img loading="lazy" src="${getIndividual(`${name}-1977.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2020.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
+<img loading="lazy" src="${getIndividual(`${name}-2027.jpeg`)}" onclick="zoom(this)" onerror="this.style.display='none'">
 
-        <b>${escapeHtml(r.Name)}</b><br>
-        ${escapeHtml(r.Branch || "")}<br>
-        ${escapeHtml(formatDOB(r.Date_of_birth))}<br>
-        ${escapeHtml(r.Email_address || "")}<br>
-        ${escapeHtml(r.Phone_numbers || "")}<br><br>
+</div>
 
-        <button onclick="showDetails(${idx})">View Details</button>
+<b>${r.Name}</b><br>
+${r.Branch}<br>
+${formatDOB(r.Date_of_birth)}<br>
+${r.Email_address||""}<br>
+${r.Phone_numbers||""}<br><br>
 
-      </div>
-    `
-  })
+<button onclick="showDetails(${idx})">View Details</button>
 
-  html += "</div>"
+</div>
 
-  cardView.innerHTML = html
+`
+
+})
+
+html+="</div>"
+
+cardView.innerHTML=html
+
 }
-
 
 function toggleView(){
 
-  cardMode=!cardMode
+cardMode=!cardMode
 
-  tableView.style.display=cardMode?"none":"block"
-  cardView.style.display=cardMode?"block":"none"
+tableView.style.display=cardMode?"none":"block"
+cardView.style.display=cardMode?"block":"none"
 
-  viewBtn.innerText=cardMode?"Show Table View":"Show Card View"
+viewBtn.innerText=cardMode?"Show Table View":"Show Card View"
 
-  render()
+render()
 
 }
 
 function updatePagination(){
 
-  let total=Math.ceil(filtered.length/pageSize())
+let total=Math.ceil(filtered.length/pageSize())
 
-  pageInfo.innerText="Page "+page+" / "+(total||1)
+pageInfo.innerText="Page "+page+" / "+(total||1)
 
-  prevBtn.disabled=(page===1)
-  nextBtn.disabled=(page===total || total===0)
+prevBtn.disabled=(page===1)
+nextBtn.disabled=(page===total)
 
 }
 
 function prevPage(){
-  if(page>1){
-    page--;
-    render();
-    scrollToTop();
-  }
+if(page>1){
+page--;
+render();
+scrollToTop();
+}
 }
 
 function nextPage(){
 
-  let total=Math.ceil(filtered.length/pageSize())
+let total=Math.ceil(filtered.length/pageSize())
 
-  if(page<total){
-    page++;
-    render();
-    scrollToTop();
-  }
-
+if(page<total){
+page++;
+render();
+scrollToTop();
 }
 
-function handleImageError(img){
-  img.onerror = null
-  img.src = PLACEHOLDER_IMG
 }
 
 function getIndividual(file){
 
-  if(!imageIndex || !imageIndex.individual) return PLACEHOLDER_IMG
+  if(!imageIndex || !imageIndex.individual) return ""
 
   let decoded = decodeURIComponent(file)
   let id = imageIndex.individual[decoded]
 
-  if(!id) return PLACEHOLDER_IMG
+  if(!id) return ""
 
   return "https://drive.google.com/thumbnail?id="+id+"&sz=w800"
 
@@ -795,6 +609,7 @@ function getGroup(file){
   if(!imageIndex || !imageIndex.group) return ""
 
   let decoded = decodeURIComponent(file)
+
   let id = imageIndex.group[decoded]
 
   if(!id) return ""
@@ -802,7 +617,7 @@ function getGroup(file){
   return "https://drive.google.com/thumbnail?id=" + id + "&sz=w1000"
 
 }
-
+  
 function showDetails(i){
 
   let r = filtered[i]
@@ -811,16 +626,16 @@ function showDetails(i){
   let img1 = getIndividual(`${name}-1977.jpeg`)
   let img2 = getIndividual(`${name}-2020.jpeg`)
   let img3 = getIndividual(`${name}-2027.jpeg`)
-  
+
   let modalImgsHTML = ""
-  
+
   if(img1) modalImgsHTML += `<img loading="lazy" src="${img1}" onclick="zoom(this)" onerror="this.style.display='none'">`
   if(img2) modalImgsHTML += `<img loading="lazy" src="${img2}" onclick="zoom(this)" onerror="this.style.display='none'">`
   if(img3) modalImgsHTML += `<img loading="lazy" src="${img3}" onclick="zoom(this)" onerror="this.style.display='none'">`
-  
+
   modalImages.innerHTML = modalImgsHTML
 
-
+  let html = ""
   for(let k in r){
     if(k === "_searchText") continue
     html += `<b>${escapeHtml(k)}</b>: ${escapeHtml(r[k] || "")}<br>`
@@ -852,82 +667,74 @@ function openMorePics(name){
   let html = ""
 
   if(!imageIndex || !imageIndex.group){
-    modal2Images.innerHTML = `<div class="placeholderText">No additional pictures available.</div>`
+    modal2Images.innerHTML = ""
     modal2.style.display = "block"
     return
   }
 
-  let files = Object.keys(imageIndex.group)
-    .filter(file => file.startsWith(decodedName + "-"))
-    .sort((a,b) => {
-      let na = parseInt((a.match(/-(\d+)\./) || [0,0])[1], 10)
-      let nb = parseInt((b.match(/-(\d+)\./) || [0,0])[1], 10)
-      return na - nb
-    })
-
-  files.forEach(file => {
-    let src = getGroup(file)
-    if(src){
-      html += `<img loading="lazy" src="${src}" onclick="zoom(this)" onerror="handleImageError(this)">`
+  for(let file in imageIndex.group){
+    if(file.startsWith(decodedName + "-")){
+      let src = getGroup(file)
+      if(src){
+        html += `<img loading="lazy" src="${src}" onclick="zoom(this)" onerror="this.style.display='none'">`
+      }
     }
-  })
+  }
 
-  modal2Images.innerHTML = html || `<div class="placeholderText">No additional pictures available.</div>`
+  modal2Images.innerHTML = html
   modal2.style.display = "block"
 }
 
+
 function openGallery(){
 
-  let files = Object.keys(imageIndex.group || {})
-    .filter(file => file.startsWith("group-"))
-    .sort((a,b) => {
-      let na = parseInt((a.match(/group-(\d+)\./) || [0,0])[1], 10)
-      let nb = parseInt((b.match(/group-(\d+)\./) || [0,0])[1], 10)
-      return na - nb
-    })
+let html=""
 
-  let html=""
+for(let file in imageIndex.group){
 
-  files.forEach(file => {
-    html += `<img loading="lazy" src="${getGroup(file)}" onclick="zoom(this)" onerror="handleImageError(this)">`
-  })
+  if(file.startsWith("group-")){
 
-  galleryGrid.innerHTML=html || `<div class="placeholderText">No gallery pictures available.</div>`
+    html += `<img loading="lazy"
+      src="${getGroup(file)}"
+      onclick="zoom(this)">`
 
-  galleryModal.style.display="block"
+  }
+
+}
+
+galleryGrid.innerHTML=html
+
+galleryModal.style.display="block"
 
 }
 
 function closeGallery(){
-  galleryModal.style.display="none"
+galleryModal.style.display="none"
 }
 
 function zoom(img){
 
-  if(!img || !img.src) return
+zoomImg.src=img.src
 
-  zoomImg.src=img.src
-
-  zoomViewer.style.display="flex"
+zoomViewer.style.display="flex"
 
 }
 
 function closeZoom(){
 
-  zoomViewer.style.display="none"
+zoomViewer.style.display="none"
 
 }
 
 window.onclick=function(e){
 
-  if(e.target.classList.contains("modal"))
-    e.target.style.display="none"
+if(e.target.classList.contains("modal"))
+e.target.style.display="none"
 
 }
 
 loadData()
 
-</script>
 </script>
 
 </body>
