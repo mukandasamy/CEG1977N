@@ -392,6 +392,81 @@ function showLoadedState(){
   footerBar.style.display = "flex"
 }
 
+function rebuildDynamicFilters(){
+
+  let selectedBranch = branchFilter.value || "ALL"
+  let selectedMonth = monthFilter.value || "ALL"
+  let selectedAlpha = alphaFilter.value || "ALL"
+  let searchText = search.value.toLowerCase()
+
+  let branchBase = data.filter(d=>{
+    let dob = new Date(d.Date_of_birth)
+    let mmm = months[dob.getMonth()]
+
+    if(selectedMonth != "ALL" && mmm != selectedMonth) return false
+    if(selectedAlpha != "ALL" && d.Name[0].toUpperCase() != selectedAlpha) return false
+    if(searchText && !(d._searchText || "").includes(searchText)) return false
+
+    return true
+  })
+
+  let monthBase = data.filter(d=>{
+    let dob = new Date(d.Date_of_birth)
+    let mmm = months[dob.getMonth()]
+
+    if(selectedBranch != "ALL" && d.Branch != selectedBranch) return false
+    if(selectedAlpha != "ALL" && d.Name[0].toUpperCase() != selectedAlpha) return false
+    if(searchText && !(d._searchText || "").includes(searchText)) return false
+
+    return true
+  })
+
+  let alphaBase = data.filter(d=>{
+    let dob = new Date(d.Date_of_birth)
+    let mmm = months[dob.getMonth()]
+
+    if(selectedBranch != "ALL" && d.Branch != selectedBranch) return false
+    if(selectedMonth != "ALL" && mmm != selectedMonth) return false
+    if(searchText && !(d._searchText || "").includes(searchText)) return false
+
+    return true
+  })
+
+  let branches = [...new Set(branchBase.map(x=>x.Branch).filter(Boolean))].sort()
+
+  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
+  branches.forEach(b=>{
+    branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`
+  })
+  branchFilter.value = branches.includes(selectedBranch) ? selectedBranch : "ALL"
+
+  let monthsAvailable = [...new Set(monthBase.map(d=>{
+    let dob = new Date(d.Date_of_birth)
+    return isNaN(dob) ? "" : months[dob.getMonth()]
+  }).filter(Boolean))]
+
+  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
+  months.forEach(m=>{
+    if(monthsAvailable.includes(m)){
+      monthFilter.innerHTML += `<option value="${m}">${m}</option>`
+    }
+  })
+  monthFilter.value = monthsAvailable.includes(selectedMonth) ? selectedMonth : "ALL"
+
+  let letters = [...new Set(alphaBase
+    .map(x => (x.Name || "").trim())
+    .filter(Boolean)
+    .map(n => n[0].toUpperCase())
+  )].sort()
+
+  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
+  letters.forEach(a=>{
+    alphaFilter.innerHTML += `<option value="${a}">${a}</option>`
+  })
+  alphaFilter.value = letters.includes(selectedAlpha) ? selectedAlpha : "ALL"
+}
+
+  
 async function loadImageIndex(){
   try{
     let cached = localStorage.getItem(IMAGE_CACHE_KEY)
@@ -426,12 +501,16 @@ async function loadData(){
   if(cached){
     data = JSON.parse(cached)
     filtered = [...data]
+  
     buildFilters()
+    rebuildDynamicFilters()
+  
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
     render()
     return
   }
+
 
   try{
     let res = await fetch(API_URL + "?action=data")
@@ -440,9 +519,14 @@ async function loadData(){
     data = fresh
     filtered = [...data]
 
+    buildFilters()
+    rebuildDynamicFilters()
+
     localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(fresh))
 
     buildFilters()
+    rebuildDynamicFilters()
+    
     loadingMessage.style.display = "none"
     filters.style.display = "flex"
 
@@ -466,46 +550,54 @@ function scrollToTop(){
 
 function buildFilters(){
 
-  let branches=[...new Set(data.map(x=>x.Branch).filter(Boolean))].sort()
+  let branches = [...new Set(data.map(x => x.Branch).filter(Boolean))].sort()
 
-  branchFilter.innerHTML="<option value='ALL'>Branch</option>"
-  branches.forEach(b=>branchFilter.innerHTML+=`<option>${escapeHtml(b)}</option>`)
+  branchFilter.innerHTML = "<option value='ALL'>Branch</option>"
+  branches.forEach(b => branchFilter.innerHTML += `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`)
 
-  monthFilter.innerHTML="<option value='ALL'>DOB Jan-Dec</option>"
-  months.forEach(m=>monthFilter.innerHTML+=`<option>${m}</option>`)
+  monthFilter.innerHTML = "<option value='ALL'>DOB Jan-Dec</option>"
+  months.forEach(m => monthFilter.innerHTML += `<option value="${m}">${m}</option>`)
 
-  let letters=[...new Set(data.map(x=>(x.Name||"")[0]?.toUpperCase()).filter(Boolean))].sort()
+  let letters = [...new Set(
+    data.map(x => (x.Name || "").trim())
+        .filter(Boolean)
+        .map(n => n[0].toUpperCase())
+  )].sort()
 
-  alphaFilter.innerHTML="<option value='ALL'>Name A - Z</option>"
-  letters.forEach(a=>alphaFilter.innerHTML+=`<option>${escapeHtml(a)}</option>`)
+  alphaFilter.innerHTML = "<option value='ALL'>Name A - Z</option>"
+  letters.forEach(a => alphaFilter.innerHTML += `<option value="${a}">${a}</option>`)
 
+  branchFilter.value = "ALL"
+  monthFilter.value = "ALL"
+  alphaFilter.value = "ALL"
 }
+
 
 function applyFilters(){
 
-  let b=branchFilter.value
-  let m=monthFilter.value
-  let a=alphaFilter.value
-  let s=search.value.toLowerCase().trim()
+  let b = branchFilter.value
+  let m = monthFilter.value
+  let a = alphaFilter.value
+  let s = search.value.toLowerCase()
 
-  filtered=data.filter(d=>{
+  filtered = data.filter(d => {
+    let dob = new Date(d.Date_of_birth)
+    let mmm = isNaN(dob) ? "" : months[dob.getMonth()]
 
-    let dob=new Date(d.Date_of_birth)
-    let mmm=isNaN(dob) ? "" : months[dob.getMonth()]
-
-    if(b!="ALL" && d.Branch!=b) return false
-    if(m!="ALL" && mmm!=m) return false
-    if(a!="ALL" && (!d.Name || d.Name[0].toUpperCase()!=a)) return false
+    if(b != "ALL" && d.Branch != b) return false
+    if(m != "ALL" && mmm != m) return false
+    if(a != "ALL" && (d.Name || "").charAt(0).toUpperCase() != a) return false
     if(s && !(d._searchText || "").includes(s)) return false
 
     return true
-
   })
 
-  page=1
-  render()
+  rebuildDynamicFilters()
 
+  page = 1
+  render()
 }
+
 
 branchFilter.onchange=applyFilters
 monthFilter.onchange=applyFilters
@@ -514,16 +606,19 @@ search.oninput=applyFilters
 
 function clearFilters(){
 
-  search.value=""
-  branchFilter.value="ALL"
-  monthFilter.value="ALL"
-  alphaFilter.value="ALL"
+  search.value = ""
+  branchFilter.value = "ALL"
+  monthFilter.value = "ALL"
+  alphaFilter.value = "ALL"
 
-  filtered=[...data]
+  filtered = [...data]
 
+  rebuildDynamicFilters()
+
+  page = 1
   render()
-
 }
+
 
 function pageSize(){
   return parseInt(document.getElementById("pageSize").options[
