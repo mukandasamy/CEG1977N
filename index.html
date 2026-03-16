@@ -245,7 +245,6 @@ float:right;
 font-size:22px;
 cursor:pointer;
 }
-
 .galleryGrid{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
@@ -274,7 +273,18 @@ cursor:pointer;
   object-fit:contain;
   object-position:center top;
   display:block;
-  background:#fafafa;
+}
+
+@media (max-width: 640px){
+  .galleryGrid{
+    grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+    gap:8px;
+  }
+
+  .galleryItem{
+    border-radius:8px;
+    padding:4px;
+  }
 }
 
 .zoomViewer{
