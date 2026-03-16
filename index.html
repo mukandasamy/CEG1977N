@@ -100,8 +100,6 @@ top:0;
   align-content:start;
 }
 
-/* Card */
-
 .card{
   width:270px;
   display:flex;
@@ -120,6 +118,18 @@ top:0;
 .card:hover{
   box-shadow:0 6px 16px rgba(0,0,0,0.15);
   transform:translateY(-2px);
+}
+
+@media (max-width: 640px){
+  .cardGrid{
+    grid-template-columns:1fr;
+    justify-content:center;
+  }
+
+  .card{
+    width:min(100%, 420px);
+    margin:0 auto;
+  }
 }
 
 /* Images row */
