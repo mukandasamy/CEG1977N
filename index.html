@@ -761,52 +761,77 @@ function renderTable(){
 }
 
 function renderCards(){
+
   const rows = paginate();
   let html = "<div class='cardGrid'>";
 
-  rows.forEach((r, i) => {
+  rows.forEach((r,i)=>{
+
     const idx = (page - 1) * pageSize() + i;
 
-    const name = r.Name || "&nbsp;";
+    const name   = r.Name || "&nbsp;";
     const branch = r.Branch || "&nbsp;";
-    const dob = formatDOB(r.Date_of_birth) || "&nbsp;";
-    const email = r.Email_address || "&nbsp;";
-    const phone = r.Phone_numbers || "&nbsp;";
+    const dob    = formatDOB(r.Date_of_birth) || "&nbsp;";
+    const email  = r.Email_address || "&nbsp;";
+    const phone  = r.Phone_numbers || "&nbsp;";
 
     html += `
-      <div class="card">
-        <div class="cardImages">
-          <div class="cardImgBox">
-            <img loading="lazy" decoding="async" src="${r._img1977 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'">
-          </div>
-          <div class="cardImgBox">
-            <img loading="lazy" decoding="async" src="${r._img2020 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'">
-          </div>
-          <div class="cardImgBox">
-            <img loading="lazy" decoding="async" src="${r._img2027 || ""}" onclick="zoom(this)" onerror="this.style.visibility='hidden'">
-          </div>
+    <div class="card">
+
+      <div class="cardImages">
+
+        <div class="cardImgBox">
+          ${r._img1977 ? `
+          <img loading="lazy" decoding="async"
+               src="${r._img1977}"
+               onclick="zoom(this)"
+               onerror="this.remove()">
+          ` : ""}
         </div>
 
-        <div class="cardBody">
-          <div class="cardName">${name}</div>
-
-          <div class="cardMeta">${branch}</div>
-          <div class="cardMeta">${dob}</div>
-          <div class="cardMeta">${email}</div>
-          <div class="cardMeta">${phone}</div>
-
-          <div class="cardActions">
-            <button onclick="showDetails(${idx})">View Details</button>
-          </div>
+        <div class="cardImgBox">
+          ${r._img2020 ? `
+          <img loading="lazy" decoding="async"
+               src="${r._img2020}"
+               onclick="zoom(this)"
+               onerror="this.remove()">
+          ` : ""}
         </div>
+
+        <div class="cardImgBox">
+          ${r._img2027 ? `
+          <img loading="lazy" decoding="async"
+               src="${r._img2027}"
+               onclick="zoom(this)"
+               onerror="this.remove()">
+          ` : ""}
+        </div>
+
       </div>
+
+      <div class="cardBody">
+
+        <div class="cardName">${name}</div>
+
+        <div class="cardMeta">${branch}</div>
+        <div class="cardMeta">${dob}</div>
+        <div class="cardMeta">${email}</div>
+        <div class="cardMeta">${phone}</div>
+
+        <div class="cardActions">
+          <button onclick="showDetails(${idx})">View Details</button>
+        </div>
+
+      </div>
+
+    </div>
     `;
   });
 
   html += "</div>";
+
   cardView.innerHTML = html;
-}
-  
+}  
 function toggleView(){
   cardMode = !cardMode
 
